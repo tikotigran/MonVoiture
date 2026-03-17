@@ -104,6 +104,10 @@ function saveStateToLocal(state: AppState) {
 
 const loadStateFromFirestore = async (userId: string): Promise<AppState | null> => {
   try {
+    if (!db) {
+      console.log('[store] Firestore not initialized')
+      return null
+    }
     console.log('[store] Starting loadStateFromFirestore for user:', userId)
     
     // Load settings
@@ -154,6 +158,7 @@ const loadStateFromFirestore = async (userId: string): Promise<AppState | null> 
 
 async function saveCarsToNewStructure(userId: string, cars: Car[]) {
   try {
+    if (!db) return
     console.log('[store] Migrating cars to new structure...')
     const batch = writeBatch(db)
     const carsRef = collection(db, 'users', userId, 'cars')
@@ -190,6 +195,7 @@ async function saveCarsToNewStructure(userId: string, cars: Car[]) {
 
 async function saveStateToNewStructure(userId: string, state: AppState) {
   try {
+    if (!db) return
     console.log('[store] Migrating state to new structure...')
     
     // Save settings
@@ -214,6 +220,7 @@ async function saveStateToNewStructure(userId: string, state: AppState) {
 
 async function saveStateToFirestore(userId: string, state: AppState) {
   try {
+    if (!db) return
     console.log('[store] Starting save to Firestore for user', userId)
     
     // Save settings
@@ -305,7 +312,7 @@ export function useAppStore(userId?: string | null) {
   }, [state, isLoaded])
 
   useEffect(() => {
-    if (!isLoaded || !userId) return
+    if (!isLoaded || !userId || !db) return
     // Only save settings automatically, not cars (cars are saved individually)
     console.log('[store] Auto-save effect triggered, but only saving settings')
     console.log('[store] Current cars count:', state.cars.length)
@@ -339,16 +346,16 @@ export function useAppStore(userId?: string | null) {
     console.log('[store] New car created:', newCar)
     
     // Save to Firebase immediately
-    if (userId) {
+    if (userId && db) {
       const carRef = doc(db, 'users', userId, 'cars', newCar.id)
       const carData = { ...newCar }
       
-      // Remove undefined fields
-      if (carData.licensePlate === undefined) delete carData.licensePlate
-      if (carData.salePrice === undefined) delete carData.salePrice
-      if (carData.saleDate === undefined) delete carData.saleDate
-      if (carData.partnerShares === undefined) delete carData.partnerShares
-      if (carData.deleted === undefined) delete carData.deleted
+      // Remove undefined fields - Firestore doesn't accept undefined values
+      Object.keys(carData).forEach(key => {
+        if ((carData as any)[key] === undefined) {
+          delete (carData as any)[key]
+        }
+      })
       
       setDoc(carRef, carData, { merge: true })
         .then(() => {
@@ -388,18 +395,18 @@ export function useAppStore(userId?: string | null) {
       )
       
       // Save to Firebase immediately to avoid race condition
-      if (userId) {
+      if (userId && db) {
         const updatedCar = updatedCars.find(car => car.id === carId)
         if (updatedCar) {
           const carRef = doc(db, 'users', userId, 'cars', carId)
           const carData = { ...updatedCar, lastModified: new Date().toISOString() }
           
-          // Remove undefined fields
-          if (carData.licensePlate === undefined) delete carData.licensePlate
-          if (carData.salePrice === undefined) delete carData.salePrice
-          if (carData.saleDate === undefined) delete carData.saleDate
-          if (carData.partnerShares === undefined) delete carData.partnerShares
-          if (carData.deleted === undefined) delete carData.deleted
+          // Remove undefined fields - Firestore doesn't accept undefined values
+          Object.keys(carData).forEach(key => {
+            if ((carData as any)[key] === undefined) {
+              delete (carData as any)[key]
+            }
+          })
           
           // Save immediately without waiting for auto-save
           setDoc(carRef, carData, { merge: true })
@@ -417,6 +424,7 @@ export function useAppStore(userId?: string | null) {
 
   const deleteCar = useCallback((carId: string) => {
     console.log('[store] deleteCar called for car:', carId)
+    console.log('[store] WARNING: This deletes individual car, not all cars!')
     
     // Update state first
     setState((prev) => ({
@@ -425,7 +433,7 @@ export function useAppStore(userId?: string | null) {
     }))
     
     // Delete from Firebase immediately
-    if (userId) {
+    if (userId && db) {
       const carRef = doc(db, 'users', userId, 'cars', carId)
       // Delete document completely
       deleteDoc(carRef)
@@ -622,7 +630,7 @@ export function useAppStore(userId?: string | null) {
     })
 
     // Save to Firebase immediately
-    if (userId) {
+    if (userId && db) {
       console.log('[store] Saving to Firebase...')
       const docRef = doc(db, 'users', userId, 'documents', newDocument.id)
       setDoc(docRef, newDocument)
@@ -647,7 +655,7 @@ export function useAppStore(userId?: string | null) {
     }))
 
     // Delete from Firebase immediately
-    if (userId) {
+    if (userId && db) {
       const docRef = doc(db, 'users', userId, 'documents', documentId)
       deleteDoc(docRef)
         .then(() => console.log('[store] Document deleted from Firestore:', documentId))
@@ -665,44 +673,46 @@ export function useAppStore(userId?: string | null) {
     }))
   }, [])
 
-const resetGarage = useCallback(async () => {
-  console.log('[store] Resetting garage - deleting cars but keeping collection')
-  
-  if (userId && db) {
-    const batch = writeBatch(db)
+  const resetGarage = useCallback(async () => {
+    console.log('[store] Resetting garage - keeping cars, deleting documents only')
+    console.log('[store] Current cars count:', state.cars.length)
+    console.log('[store] Current cars:', state.cars.map(c => ({ id: c.id, name: c.name })))
     
-    // Удаляем все машины из коллекции cars
-    const carsRef = collection(db, 'users', userId, 'cars')
-    const carsSnap = await getDocs(carsRef)
-    carsSnap.forEach((carDoc) => {
-      console.log('[store] Deleting car:', carDoc.id)
-      batch.delete(doc(carsRef, carDoc.id))
-    })
-    
-    // Удаляем все документы
-    const documentsRef = collection(db, 'users', userId, 'documents')
-    const documentsSnap = await getDocs(documentsRef)
-    documentsSnap.forEach((docDoc) => {
-      console.log('[store] Deleting document:', docDoc.id)
-      batch.delete(doc(documentsRef, docDoc.id))
-    })
-    
-    await batch.commit()
-    console.log('[store] All cars and documents deleted, collections preserved')
-  }
-  
-  // Очищаем локальное состояние
-  setState({
-    ...defaultState,
-    settings: {
-      ...defaultState.settings,
-      currency: state.settings.currency,
-      language: state.settings.language,
-      theme: state.settings.theme,
-      features: state.settings.features,
+    // Delete all documents from Firebase (but keep cars)
+    if (userId && db) {
+      console.log('[store] Starting documents deletion...')
+      const documentsRef = collection(db, 'users', userId, 'documents')
+      const documentsSnap = await getDocs(documentsRef)
+      console.log('[store] Found documents to delete:', documentsSnap.docs.length)
+      
+      const batch = writeBatch(db)
+      documentsSnap.forEach((docDoc) => {
+        console.log('[store] Deleting document:', docDoc.id)
+        batch.delete(doc(documentsRef, docDoc.id))
+      })
+      
+      await batch.commit()
+      console.log('[store] Documents deleted from Firestore, cars preserved')
+    } else {
+      console.log('[store] No userId or db, skipping Firebase deletion')
     }
-  })
-}, [userId, state.settings])
+    
+    // Reset local state but preserve cars
+    setState({
+      ...defaultState,
+      cars: state.cars, // Keep existing cars
+      settings: {
+        ...defaultState.settings,
+        // Keep current user settings
+        currency: state.settings.currency,
+        language: state.settings.language,
+        theme: state.settings.theme,
+        features: state.settings.features,
+      }
+    })
+    
+    console.log('[store] Garage reset complete')
+  }, [userId, state.settings])
 
   return {
     state,
