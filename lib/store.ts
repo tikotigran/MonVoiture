@@ -674,33 +674,47 @@ export function useAppStore(userId?: string | null) {
   }, [])
 
   const resetGarage = useCallback(async () => {
-    console.log('[store] Resetting garage - keeping cars, deleting documents only')
+    console.log('[store] Resetting garage - deleting all cars and documents')
     console.log('[store] Current cars count:', state.cars.length)
     console.log('[store] Current cars:', state.cars.map(c => ({ id: c.id, name: c.name })))
     
-    // Delete all documents from Firebase (but keep cars)
+    // Delete all documents from Firebase (but keep collection structure)
     if (userId && db) {
       console.log('[store] Starting documents deletion...')
+      
+      // Delete documents
       const documentsRef = collection(db, 'users', userId, 'documents')
       const documentsSnap = await getDocs(documentsRef)
       console.log('[store] Found documents to delete:', documentsSnap.docs.length)
       
+      // Delete cars
+      const carsRef = collection(db, 'users', userId, 'cars')
+      const carsSnap = await getDocs(carsRef)
+      console.log('[store] Found cars to delete:', carsSnap.docs.length)
+      
       const batch = writeBatch(db)
+      
+      // Delete all documents
       documentsSnap.forEach((docDoc) => {
         console.log('[store] Deleting document:', docDoc.id)
         batch.delete(doc(documentsRef, docDoc.id))
       })
       
+      // Delete all cars documents
+      carsSnap.forEach((carDoc) => {
+        console.log('[store] Deleting car:', carDoc.id)
+        batch.delete(doc(carsRef, carDoc.id))
+      })
+      
       await batch.commit()
-      console.log('[store] Documents deleted from Firestore, cars preserved')
+      console.log('[store] Documents and cars deleted from Firestore, collections preserved')
     } else {
       console.log('[store] No userId or db, skipping Firebase deletion')
     }
     
-    // Reset local state but preserve cars
+    // Reset local state completely
     setState({
       ...defaultState,
-      cars: state.cars, // Keep existing cars
       settings: {
         ...defaultState.settings,
         // Keep current user settings
