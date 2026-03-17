@@ -19,6 +19,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'stats.carsSold': 'авто продано',
     'message.carAdded': 'Машина успешно добавлена',
     'message.partnerAdded': 'Партнер успешно добавлен',
+    'message.loading': 'Загрузка...',
     
     // Buttons
     'button.add': 'Добавить',
@@ -300,6 +301,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'status.partnership': 'Partnership',
     'message.noCars': 'No cars',
     'message.addCarsFirst': 'Add your first car to get started',
+    'message.loading': 'Loading...',
     'message.noExpenses': 'No expenses',
     'message.noChecklistItems': 'No checklist items. Add parts or work.',
     'message.noSearchResults': 'No results for "{query}"',
@@ -517,6 +519,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'status.partnership': 'Partenariat',
     'message.noCars': 'Aucune voiture',
     'message.addCarsFirst': 'Ajoutez votre première voiture pour commencer',
+    'message.loading': 'Chargement...',
     'message.noExpenses': 'Aucune dépense',
     'message.noChecklistItems': 'Aucun élément de liste de vérification. Ajoutez des pièces ou des travaux.',
     'message.noSearchResults': 'Aucun résultat pour "{query}"',
@@ -734,6 +737,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'status.partnership': 'Գործընություն',
     'message.noCars': 'Ավտոմոբիլներ չկան',
     'message.addCarsFirst': 'Ավելացրեք ձեր առաջին մեքենան, որպես սկսելու',
+    'message.loading': 'Բեռնում...',
     'message.noExpenses': 'Ծախսեր չկան',
     'message.noChecklistItems': 'Չկան ստուգման ցուցակի կետեր։ Ավելացրեք պահեստամասեր կամ աշխատանքներ։',
     'message.noSearchResults': 'Որևէ արդյունք "{query}"-ի համար',
