@@ -260,16 +260,12 @@ export default function Home() {
             )}
 
             {filteredCars.length === 0 ? (
-              state.cars.length === 0 ? (
-                <EmptyState language={state.settings.language} />
-              ) : searchQuery.trim() ? (
+              searchQuery.trim() ? (
                 <p className="text-center text-muted-foreground py-8">
                   {t('message.noSearchResults', state.settings.language).replace('{query}', searchQuery)}
                 </p>
               ) : (
-                <p className="text-center text-muted-foreground py-8">
-                  {t('message.noCarsInCategory', state.settings.language)}
-                </p>
+                <EmptyState language={state.settings.language} />
               )
             ) : (
               <div className="space-y-3">
