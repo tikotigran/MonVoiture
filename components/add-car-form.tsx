@@ -54,12 +54,12 @@ export function AddCarForm({ open, onOpenChange, partners, onAdd, onAddPartner, 
   const handlePartnershipChange = (checked: boolean) => {
     setIsPartnership(checked)
     if (checked && partners.length > 0) {
-      // Auto-fill equal shares
+      // Auto-fill equal shares (50/50 for 2 partners, 33/33/34 for 3, etc.)
       const equalShare = Math.floor(100 / partners.length)
       const remainder = 100 - (equalShare * partners.length)
       const newShares: { [key: string]: number } = {}
       partners.forEach((p, index) => {
-        newShares[p.id] = equalShare + (index === 0 ? remainder : 0)
+        newShares[p.id] = equalShare + (index < remainder ? 1 : 0)
       })
       setShares(newShares)
     }
@@ -94,6 +94,18 @@ export function AddCarForm({ open, onOpenChange, partners, onAdd, onAddPartner, 
       error(t('error.carNameRequired', language))
       return
     }
+
+    const carData: any = {
+      name: name.trim(),
+    }
+
+    // Add optional fields only if they have values
+    if (licensePlate.trim()) carData.licensePlate = licensePlate.trim()
+    if (year.trim()) carData.year = parseInt(year.trim())
+    if (km.trim()) carData.km = parseInt(km.trim())
+    if (purchasePrice.trim()) carData.purchasePrice = parseFloat(purchasePrice.trim())
+    if (purchaseDate.trim()) carData.purchaseDate = purchaseDate.trim()
+    if (notes.trim()) carData.notes = notes.trim()
 
     const partnerShares: { [key: string]: number } = {}
     if (isPartnership) {
