@@ -665,44 +665,44 @@ export function useAppStore(userId?: string | null) {
     }))
   }, [])
 
-  const resetGarage = useCallback(async () => {
-    console.log('[store] Resetting garage - deleting all data')
+const resetGarage = useCallback(async () => {
+  console.log('[store] Resetting garage - deleting cars but keeping collection')
+  
+  if (userId && db) {
+    const batch = writeBatch(db)
     
-    // Delete all cars from Firebase
-    if (userId) {
-      const carsRef = collection(db, 'users', userId, 'cars')
-      const carsSnap = await getDocs(carsRef)
-      const batch = writeBatch(db)
-      carsSnap.forEach((carDoc) => {
-        batch.delete(doc(carsRef, carDoc.id))
-      })
-      
-      // Delete all documents from Firebase
-      const documentsRef = collection(db, 'users', userId, 'documents')
-      const documentsSnap = await getDocs(documentsRef)
-      documentsSnap.forEach((docDoc) => {
-        batch.delete(doc(documentsRef, docDoc.id))
-      })
-      
-      await batch.commit()
-      console.log('[store] All data deleted from Firestore')
-    }
-    
-    // Reset local state to default
-    setState({
-      ...defaultState,
-      settings: {
-        ...defaultState.settings,
-        // Keep current user settings
-        currency: state.settings.currency,
-        language: state.settings.language,
-        theme: state.settings.theme,
-        features: state.settings.features,
-      }
+    // Удаляем все машины из коллекции cars
+    const carsRef = collection(db, 'users', userId, 'cars')
+    const carsSnap = await getDocs(carsRef)
+    carsSnap.forEach((carDoc) => {
+      console.log('[store] Deleting car:', carDoc.id)
+      batch.delete(doc(carsRef, carDoc.id))
     })
     
-    console.log('[store] Garage reset complete')
-  }, [userId, state.settings])
+    // Удаляем все документы
+    const documentsRef = collection(db, 'users', userId, 'documents')
+    const documentsSnap = await getDocs(documentsRef)
+    documentsSnap.forEach((docDoc) => {
+      console.log('[store] Deleting document:', docDoc.id)
+      batch.delete(doc(documentsRef, docDoc.id))
+    })
+    
+    await batch.commit()
+    console.log('[store] All cars and documents deleted, collections preserved')
+  }
+  
+  // Очищаем локальное состояние
+  setState({
+    ...defaultState,
+    settings: {
+      ...defaultState.settings,
+      currency: state.settings.currency,
+      language: state.settings.language,
+      theme: state.settings.theme,
+      features: state.settings.features,
+    }
+  })
+}, [userId, state.settings])
 
   return {
     state,
