@@ -339,6 +339,7 @@ export default function Home() {
       <SettingsSheet
         open={showSettings}
         onOpenChange={setShowSettings}
+        user={user}
         partners={state.settings.partners}
         currency={state.settings.currency}
         language={state.settings.language}
