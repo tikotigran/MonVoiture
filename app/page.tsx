@@ -216,19 +216,11 @@ export default function Home() {
 
         {/* Дашборд */}
         {showDashboard && (
-          state.cars.length > 0 ? (
-            <Dashboard 
-              cars={state.cars} 
-              currency={state.settings.currency} 
-              language={state.settings.language} 
-            />
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">
-                {t('dashboard.noData', state.settings.language) || 'Нет данных для дашборда'}
-              </p>
-            </div>
-          )
+          <Dashboard 
+            cars={state.cars} 
+            currency={state.settings.currency} 
+            language={state.settings.language} 
+          />
         )}
 
         {/* Список машин */}
