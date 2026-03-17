@@ -259,7 +259,7 @@ export default function Home() {
               </>
             )}
 
-            {filteredCars.length === 0 ? (
+            {filteredCars.length === 0 && state.cars.length === 0 ? (
               searchQuery.trim() ? (
                 <p className="text-center text-muted-foreground py-8">
                   {t('message.noSearchResults', state.settings.language).replace('{query}', searchQuery)}
