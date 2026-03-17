@@ -20,11 +20,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import type { Partner } from '@/lib/types'
+import type { User } from 'firebase/auth'
 import { t } from '@/lib/translations'
 
 interface SettingsSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  user: User | null
   partners: Partner[]
   currency: string
   language: 'ru' | 'fr' | 'hy' | 'en'
@@ -51,6 +53,7 @@ interface SettingsSheetProps {
 export function SettingsSheet({
   open,
   onOpenChange,
+  user,
   partners,
   currency,
   language,
@@ -72,8 +75,6 @@ export function SettingsSheet({
   const [showResetDialog, setShowResetDialog] = useState(false)
   const [resetPassword, setResetPassword] = useState('')
   const [resetError, setResetError] = useState('')
-
-  const RESET_PASSWORD = 'garage2024'
 
   useEffect(() => {
     if (open) {
@@ -106,10 +107,10 @@ export function SettingsSheet({
 
   const handleResetGarage = () => {
     console.log('[settings] User entered password:', resetPassword)
-    console.log('[settings] Expected password:', RESET_PASSWORD)
-    console.log('[settings] Passwords match:', resetPassword === RESET_PASSWORD)
+    console.log('[settings] User email:', user?.email)
     
-    if (resetPassword !== RESET_PASSWORD) {
+    // Use user email as the password for reset
+    if (!user || resetPassword !== user.email) {
       setResetError(t('settings.resetPasswordError', language))
       return
     }
