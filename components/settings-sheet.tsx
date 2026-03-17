@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { Trash2, UserPlus, Edit2, AlertTriangle } from 'lucide-react'
+import { signInWithEmailAndPassword } from 'firebase/auth'
+import { auth } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -105,19 +107,27 @@ export function SettingsSheet({
     setEditingPartnerName('')
   }
 
-  const handleResetGarage = () => {
-    console.log('[settings] User entered password:', resetPassword)
-    console.log('[settings] User email:', user?.email)
+  const handleResetGarage = async () => {
+    console.log('[settings] Attempting garage reset with password')
     
-    // Use user email as the password for reset
-    if (!user || resetPassword !== user.email) {
+    if (!user || !user.email) {
       setResetError(t('settings.resetPasswordError', language))
       return
     }
-    onResetGarage?.()
-    setShowResetDialog(false)
-    setResetPassword('')
-    setResetError('')
+
+    try {
+      // Re-authenticate user with their password
+      await signInWithEmailAndPassword(auth, user.email, resetPassword)
+      console.log('[settings] Password verification successful')
+      
+      onResetGarage?.()
+      setShowResetDialog(false)
+      setResetPassword('')
+      setResetError('')
+    } catch (error: any) {
+      console.log('[settings] Password verification failed:', error.message)
+      setResetError(t('settings.resetPasswordError', language))
+    }
   }
 
   const handleOpenResetDialog = () => {
