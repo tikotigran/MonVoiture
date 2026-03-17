@@ -197,32 +197,38 @@ export default function Home() {
 
       <main className="p-4 pb-24 space-y-4">
         {/* Переключатель между Дашбордом и списком машин */}
-        {state.cars.length > 0 && (
-          <div className="flex gap-2 mb-4">
-            <Button
-              variant={showDashboard ? "default" : "outline"}
-              onClick={() => setShowDashboard(true)}
-              className="flex-1"
-            >
-              📊 {t('button.dashboard', state.settings.language)}
-            </Button>
-            <Button
-              variant={!showDashboard ? "default" : "outline"}
-              onClick={() => setShowDashboard(false)}
-              className="flex-1"
-            >
-              🚗 {t('button.cars', state.settings.language)}
-            </Button>
-          </div>
-        )}
+        <div className="flex gap-2 mb-4">
+          <Button
+            variant={showDashboard ? "default" : "outline"}
+            onClick={() => setShowDashboard(true)}
+            className="flex-1"
+          >
+            📊 {t('button.dashboard', state.settings.language)}
+          </Button>
+          <Button
+            variant={!showDashboard ? "default" : "outline"}
+            onClick={() => setShowDashboard(false)}
+            className="flex-1"
+          >
+            🚗 {t('button.cars', state.settings.language)}
+          </Button>
+        </div>
 
         {/* Дашборд */}
-        {showDashboard && state.cars.length > 0 && (
-          <Dashboard 
-            cars={state.cars} 
-            currency={state.settings.currency} 
-            language={state.settings.language} 
-          />
+        {showDashboard && (
+          state.cars.length > 0 ? (
+            <Dashboard 
+              cars={state.cars} 
+              currency={state.settings.currency} 
+              language={state.settings.language} 
+            />
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">
+                {t('dashboard.noData', state.settings.language) || 'Нет данных для дашборда'}
+              </p>
+            </div>
+          )
         )}
 
         {/* Список машин */}
