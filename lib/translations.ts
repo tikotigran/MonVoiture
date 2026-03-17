@@ -14,6 +14,7 @@ export const translations: Record<Language, Record<string, string>> = {
     
     // Stats
     'stats.invested': 'Вложено',
+    'stats.total': 'Итого',
     'stats.carsActive': 'авто в ремонте',
     'stats.carsSold': 'авто продано',
     'message.carAdded': 'Машина успешно добавлена',
@@ -247,6 +248,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'tab.active': 'In Repair',
     'tab.sold': 'Sold',
     'stats.invested': 'Invested',
+    'stats.total': 'Total',
     'stats.carsActive': 'cars in repair',
     'stats.carsSold': 'cars sold',
     'button.add': 'Add',
@@ -463,6 +465,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'tab.active': 'En Réparation',
     'tab.sold': 'Vendus',
     'stats.invested': 'Investi',
+    'stats.total': 'Total',
     'stats.carsActive': 'voitures en réparation',
     'stats.carsSold': 'voitures vendues',
     'button.add': 'Ajouter',
@@ -679,6 +682,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'tab.active': 'Վերանորոգման մեջ',
     'tab.sold': 'Վաճառվածներ',
     'stats.invested': 'Ներդրված',
+    'stats.total': 'Ընդհանուր',
     'stats.carsActive': 'ավտոմոբիլ վերանորոգման մեջ',
     'stats.carsSold': 'ավտոմոբիլ վաճառված',
     'button.add': 'Ավելացնել',
