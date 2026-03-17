@@ -1,0 +1,31 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Фон -->
+  <rect width="512" height="512" rx="128" fill="#2563eb"/>
+  
+  <!-- Автомобиль -->
+  <g transform="translate(256, 240)">
+    <!-- Кузов -->
+    <rect x="-100" y="-40" width="200" height="65" rx="20" fill="white"/>
+    <rect x="-90" y="-50" width="180" height="40" rx="15" fill="white"/>
+    
+    <!-- Колеса -->
+    <circle cx="-60" cy="40" r="20" fill="#1e40af"/>
+    <circle cx="60" cy="40" r="20" fill="#1e40af"/>
+    
+    <!-- Окна -->
+    <rect x="-60" y="-45" width="50" height="25" rx="5" fill="#2563eb"/>
+    <rect x="10" y="-45" width="50" height="25" rx="5" fill="#2563eb"/>
+    
+    <!-- Фары -->
+    <rect x="-105" y="-15" width="10" height="15" rx="3" fill="#fbbf24"/>
+    <rect x="95" y="-15" width="10" height="15" rx="3" fill="#fbbf24"/>
+    
+    <!-- Детали кузова -->
+    <rect x="-80" y="-25" width="160" height="5" rx="2" fill="#e5e7eb"/>
+    <circle cx="0" cy="-22" r="8" fill="#2563eb"/>
+  </g>
+  
+  <!-- Текст -->
+  <text x="256" y="420" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="42" font-weight="bold">Автоучет</text>
+  <text x="256" y="460" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="24" opacity="0.9">Учет автомобилей</text>
+</svg>
