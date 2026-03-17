@@ -201,7 +201,6 @@ export const translations: Record<Language, Record<string, string>> = {
     'dashboard.carsSoldThisMonth': 'Продано машин',
     'dashboard.monthlyProfit': 'Прибыль за месяц',
     'dashboard.avgProfit': 'Средняя прибыль',
-    'dashboard.noData': 'Нет данных для дашборда',
 
     // Settings
     'settings.notifications': 'Уведомления',
@@ -421,7 +420,6 @@ export const translations: Record<Language, Record<string, string>> = {
     'dashboard.carsSoldThisMonth': 'Cars Sold This Month',
     'dashboard.monthlyProfit': 'Monthly Profit',
     'dashboard.avgProfit': 'Average Profit',
-    'dashboard.noData': 'No dashboard data',
 
     // Settings
     'settings.camera': 'Camera',
@@ -640,7 +638,6 @@ export const translations: Record<Language, Record<string, string>> = {
     'dashboard.carsSoldThisMonth': 'Voitures Vendues Ce Mois',
     'dashboard.monthlyProfit': 'Bénéfice Mensuel',
     'dashboard.avgProfit': 'Bénéfice Moyen',
-    'dashboard.noData': 'Aucune donnée de tableau de bord',
 
     // Settings
     'settings.camera': 'Caméra',
@@ -859,7 +856,6 @@ export const translations: Record<Language, Record<string, string>> = {
     'dashboard.carsSoldThisMonth': 'Այս Ամիս Վաճառված',
     'dashboard.monthlyProfit': 'Ամսական Շահույթ',
     'dashboard.avgProfit': 'Միջին Շահույթ',
-    'dashboard.noData': 'Տախտանիշային տվյալներ չկան',
 
     // Settings
     'settings.camera': 'Խցիկ',
