@@ -298,7 +298,7 @@ export default function Home() {
         )}
       </main>
 
-      {/* Floating Action Button */}
+        {/* Floating Action Button */}
       <div className="fixed bottom-6 right-6">
         <Button
           size="lg"
