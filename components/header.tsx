@@ -9,7 +9,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { t } from '@/lib/translations'
 
 interface HeaderProps {
@@ -46,8 +45,6 @@ export function Header({
 
         {/* Правая часть */}
         <div className="flex items-center gap-2">
-          <ThemeToggle />
-          
           {showSearch && (
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
