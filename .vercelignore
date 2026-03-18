@@ -1,0 +1,15 @@
+# Ignore everything
+*
+
+# But not these files
+!.gitignore
+!package.json
+!pnpm-lock.yaml
+!app/
+!components/
+!lib/
+!public/
+!.env.example
+!next.config.mjs
+!tsconfig.json
+!components.json
