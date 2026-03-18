@@ -40,7 +40,7 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
+  --background: oklch(19.689% 0.0016 16.521);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.145 0 0);
   --card-foreground: oklch(0.985 0 0);
@@ -119,6 +119,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
