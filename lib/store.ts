@@ -16,6 +16,7 @@ const defaultState: AppState = {
     currency: '€',
     language: 'ru',
     theme: 'system',
+    appName: 'EDVI AUTO',
     features: {
       sorting: true,
       purchaseDate: true,
