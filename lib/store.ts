@@ -125,6 +125,7 @@ const loadStateFromFirestore = async (userId: string): Promise<AppState | null> 
         currency: cleanSettings.currency || defaultState.settings.currency,
         language: cleanSettings.language || defaultState.settings.language,
         theme: cleanSettings.theme || defaultState.settings.theme,
+        appName: cleanSettings.appName || defaultState.settings.appName,
         features: cleanSettings.features || defaultState.settings.features,
       } as AppSettings
     }
@@ -325,6 +326,7 @@ export function useAppStore(userId?: string | null) {
       currency: state.settings.currency,
       language: state.settings.language,
       theme: state.settings.theme,
+      appName: state.settings.appName,
       features: state.settings.features,
     }
     
