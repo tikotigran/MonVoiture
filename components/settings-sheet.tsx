@@ -27,6 +27,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import { ChevronDown } from 'lucide-react'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 import type { Partner } from '@/lib/types'
 import type { User } from 'firebase/auth'
 import { t } from '@/lib/translations'
@@ -425,16 +426,7 @@ export function SettingsSheet({
             <CollapsibleContent className="space-y-4">
               <div className="space-y-2">
                 <Label>{t('settings.theme', language)}</Label>
-                <Select value={theme} onValueChange={(value: 'light' | 'dark' | 'system') => onUpdateTheme(value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">{t('settings.lightTheme', language)}</SelectItem>
-                    <SelectItem value="dark">{t('settings.darkTheme', language)}</SelectItem>
-                    <SelectItem value="system">{t('settings.systemTheme', language)}</SelectItem>
-                  </SelectContent>
-                </Select>
+                <ThemeToggle />
               </div>
             </CollapsibleContent>
           </Collapsible>
