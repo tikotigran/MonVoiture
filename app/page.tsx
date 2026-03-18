@@ -63,6 +63,22 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showDashboard, setShowDashboard] = useState(true)
 
+  // Apply theme changes immediately
+  useEffect(() => {
+    console.log('[page] Theme useEffect triggered, theme:', state.settings.theme)
+    const root = window.document.documentElement
+    root.classList.remove('light', 'dark')
+    
+    if (state.settings.theme === 'system') {
+      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+      console.log('[page] Applying system theme:', systemTheme)
+      root.classList.add(systemTheme)
+    } else {
+      console.log('[page] Applying theme:', state.settings.theme)
+      root.classList.add(state.settings.theme)
+    }
+  }, [state.settings.theme])
+
   const filteredCars = useMemo(() => {
     let cars = state.cars
   
