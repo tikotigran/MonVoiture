@@ -192,6 +192,7 @@ export default function Home() {
         onSearch={setSearchQuery}
         searchQuery={searchQuery}
         language={state.settings.language}
+        appName={state.settings.appName}
         showSearch={state.settings.features?.search}
       />
 
