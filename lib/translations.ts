@@ -4,14 +4,14 @@ export const translations: Record<Language, Record<string, string>> = {
   ru: {
     // Header
     'header.title': 'Учет автомобилей',
-    
+
     // Tabs
     'tabs.active': 'Активные',
     'tabs.sold': 'Продано',
     'tab.all': 'Все',
     'tab.active': 'В Ремонте',
     'tab.sold': 'Проданные',
-    
+
     // Stats
     'stats.invested': 'Вложено',
     'stats.total': 'Итого',
@@ -22,8 +22,9 @@ export const translations: Record<Language, Record<string, string>> = {
     'message.loading': 'Загрузка...',
     'message.cannotAddCar': 'Объясните почему не получается добавить машину',
     'error.carNameRequired': 'Название машины обязательно',
-    
+
     // Buttons
+    'button.enter': 'Войти',
     'button.add': 'Добавить',
     'button.delete': 'Удалить',
     'button.edit': 'Редактировать',
@@ -41,7 +42,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'button.settings': 'Настройки',
     'button.logout': 'Выход',
     'button.addPartner': 'Добавить партнера',
-    
+
     // Labels
     'label.name': 'Название',
     'label.carName': 'Название машины',
@@ -70,25 +71,25 @@ export const translations: Record<Language, Record<string, string>> = {
     'label.sold': 'Продано',
     'label.notes': 'Заметки',
     'label.checklist': 'Чек-лист',
-    
+
     // Status
     'status.active': 'В Ремонте',
     'status.sold': 'Продано',
     'status.partnership': 'Партнерство',
-    
+
     // Messages
     'message.noCars': 'Нет машин',
     'message.addCarsFirst': 'Добавьте свою первую машину, чтобы начать',
     'message.noExpenses': 'Нет расходов',
     'message.noSearchResults': 'Нет результатов по запросу "{query}"',
     'message.carNotSold': 'Автомобиль ещё не продан. Информация о прибыли появится после продажи.',
-    
+
     // Categories
     'category.parts': 'Запчасти',
     'category.repair': 'Ремонт',
     'category.documents': 'Оформление',
     'category.other': 'Другое',
-    
+
     // Notifications
     'notification.insuranceReminder': 'Напоминание о страховке',
     'notification.technicalReminder': 'Напоминание о ТО',
