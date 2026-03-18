@@ -667,6 +667,7 @@ export function useAppStore(userId?: string | null) {
   }, [userId])
 
   const updateTheme = useCallback((theme: 'light' | 'dark' | 'system') => {
+    console.log('[store] updateTheme called with:', theme)
     setState((prev) => ({
       ...prev,
       settings: {
@@ -678,13 +679,16 @@ export function useAppStore(userId?: string | null) {
 
   // Apply theme changes immediately
   useEffect(() => {
+    console.log('[store] Theme useEffect triggered, theme:', state.settings.theme)
     const root = window.document.documentElement
     root.classList.remove('light', 'dark')
     
     if (state.settings.theme === 'system') {
       const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+      console.log('[store] Applying system theme:', systemTheme)
       root.classList.add(systemTheme)
     } else {
+      console.log('[store] Applying theme:', state.settings.theme)
       root.classList.add(state.settings.theme)
     }
   }, [state.settings.theme])
