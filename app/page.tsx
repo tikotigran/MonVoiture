@@ -45,6 +45,7 @@ export default function Home() {
     updateCurrency,
     updateLanguage,
     updateFeatures,
+    updateAppName,
     addDocument,
     deleteDocument,
     updateTheme,
