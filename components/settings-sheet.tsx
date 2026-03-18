@@ -21,6 +21,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import { ChevronDown } from 'lucide-react'
 import type { Partner } from '@/lib/types'
 import type { User } from 'firebase/auth'
 import { t } from '@/lib/translations'
@@ -81,6 +87,13 @@ export function SettingsSheet({
   const [showResetDialog, setShowResetDialog] = useState(false)
   const [resetPassword, setResetPassword] = useState('')
   const [resetError, setResetError] = useState('')
+  
+  // Collapsible sections state
+  const [openPartners, setOpenPartners] = useState(true)
+  const [openFeatures, setOpenFeatures] = useState(false)
+  const [openLanguage, setOpenLanguage] = useState(false)
+  const [openTheme, setOpenTheme] = useState(false)
+  const [openDanger, setOpenDanger] = useState(false)
 
   useEffect(() => {
     if (open) {
@@ -162,10 +175,16 @@ export function SettingsSheet({
         </DialogHeader>
 
         <div className="space-y-6">
-          <div className="space-y-4">
-            <Label>{t('label.partners', language)}</Label>
-            <div className="space-y-2">
-              {partners.map((partner) => (
+          <Collapsible open={openPartners} onOpenChange={setOpenPartners}>
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent cursor-pointer">
+                <Label className="cursor-pointer">{t('label.partners', language)}</Label>
+                <ChevronDown className={`w-4 h-4 transition-transform ${openPartners ? 'rotate-180' : ''}`} />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-4">
+              <div className="space-y-2">
+                {partners.map((partner) => (
                 <div
                   key={partner.id}
                   className="flex items-center justify-between p-2 rounded-lg border bg-card"
@@ -251,7 +270,8 @@ export function SettingsSheet({
                 {t('button.addPartner', language)}
               </Button>
             </div>
-          </div>
+            </CollapsibleContent>
+          </Collapsible>
 
           <div className="space-y-4">
             <Label>{t('settings.features', language)}</Label>
