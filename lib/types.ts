@@ -57,6 +57,7 @@ export interface AppSettings {
   currency: string
   language: 'ru' | 'fr' | 'hy' | 'en'
   theme: 'light' | 'dark' | 'system'
+  appName: string
   features: {
     sorting: boolean
     purchaseDate: boolean
