@@ -48,6 +48,7 @@ export default function Home() {
     addDocument,
     deleteDocument,
     updateTheme,
+    updateAppName,
     resetGarage,
   } = useAppStore(user?.uid)
 
@@ -191,6 +192,7 @@ export default function Home() {
         onLogout={handleLogout}
         onSearch={setSearchQuery}
         searchQuery={searchQuery}
+        appName={state.settings.appName}
         language={state.settings.language}
         showSearch={state.settings.features?.search}
       />
@@ -337,6 +339,7 @@ export default function Home() {
         partners={state.settings.partners}
         currency={state.settings.currency}
         language={state.settings.language}
+        appName={state.settings.appName}
         theme={state.settings.theme}
         features={state.settings.features || { sorting: true, purchaseDate: true, licensePlate: true, km: true, year: true }}
         onAddPartner={addPartner}
@@ -346,6 +349,7 @@ export default function Home() {
         onUpdateFeatures={updateFeatures}
         onUpdateLanguage={updateLanguage}
         onUpdateTheme={updateTheme}
+        onUpdateAppName={updateAppName}
         onResetGarage={resetGarage}
       />
     </div>

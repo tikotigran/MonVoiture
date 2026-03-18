@@ -16,6 +16,7 @@ const defaultState: AppState = {
     currency: '€',
     language: 'ru',
     theme: 'system',
+    appName: 'Mon Garage',
     features: {
       sorting: true,
       purchaseDate: true,
@@ -28,12 +29,18 @@ const defaultState: AppState = {
   },
 }
 
-function loadStateFromLocal(): AppState {
-  if (typeof window === 'undefined') return defaultState
+const loadState = (userId?: string): AppState => {
+  // Try localStorage first (emergency recovery)
   try {
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved) {
       const state = JSON.parse(saved)
+      
+      // Emergency recovery: if Firebase has no data but localStorage does
+      if (state.cars && state.cars.length > 0) {
+        console.log('[store] Emergency recovery: found', state.cars.length, 'cars in localStorage')
+        return state
+      }
       
       // Migrate old French "Moi" to Russian "Я"
       if (state.settings?.partners) {
@@ -60,12 +67,21 @@ function loadStateFromLocal(): AppState {
         state.settings.userRole = 'admin'
       }
       
+      if (!state.settings.appName) {
+        state.settings.appName = 'Mon Garage'
+      }
+      
       return state
     }
-  } catch {
-    console.error('Failed to load state')
+  } catch (error) {
+    console.error('[store] Failed to load state from localStorage:', error)
   }
+  
   return defaultState
+}
+
+const loadStateFromLocal = (): AppState => {
+  return loadState()
 }
 
 function saveStateToLocal(state: AppState) {
@@ -275,33 +291,51 @@ export function useAppStore(userId?: string | null) {
   const [isLoaded, setIsLoaded] = useState(false)
 
   useEffect(() => {
-    let cancelled = false
+    let isSubscribed = true
 
-    async function init() {
-      if (!userId) {
-        setState(loadStateFromLocal())
+    const loadState = async () => {
+      console.log('[store] Starting loadState for user:', userId)
+      
+      // First try localStorage (emergency recovery)
+      const localState = loadStateFromLocal()
+      if (localState.cars && localState.cars.length > 0) {
+        console.log('[store] Found local data, using as fallback')
+        setState(localState)
         setIsLoaded(true)
-        return
       }
 
-      const fromRemote = await loadStateFromFirestore(userId)
-      if (cancelled) return
-
-      if (fromRemote) {
-        setState(fromRemote)
+      // Then try Firebase
+      if (userId) {
+        try {
+          const firestoreState = await loadStateFromFirestore(userId)
+          if (isSubscribed) {
+            if (firestoreState && (firestoreState.cars.length > 0 || firestoreState.documents.length > 0)) {
+              console.log('[store] Loaded from Firestore:', firestoreState.cars.length, 'cars')
+              setState(firestoreState)
+              saveStateToLocal(firestoreState)
+            } else if (localState.cars.length === 0) {
+              // Only use Firebase state if localStorage is empty
+              setState(firestoreState || localState)
+            }
+            setIsLoaded(true)
+          }
+        } catch (error) {
+          console.error('[store] Firebase load failed, using local state:', error)
+          if (isSubscribed) {
+            setIsLoaded(true)
+          }
+        }
       } else {
-        // try migrate from localStorage for first login
-        const local = loadStateFromLocal()
-        setState(local)
-        await saveStateToFirestore(userId, local)
+        if (isSubscribed) {
+          setIsLoaded(true)
+        }
       }
-      setIsLoaded(true)
     }
 
-    init()
+    loadState()
 
     return () => {
-      cancelled = true
+      isSubscribed = false
     }
   }, [userId])
 
@@ -673,6 +707,16 @@ export function useAppStore(userId?: string | null) {
     }))
   }, [])
 
+  const updateAppName = useCallback((appName: string) => {
+    setState((prev) => ({
+      ...prev,
+      settings: {
+        ...prev.settings,
+        appName,
+      },
+    }))
+  }, [])
+
   const resetGarage = useCallback(async () => {
     console.log('[store] Resetting garage - deleting all cars and documents')
     console.log('[store] Current cars count:', state.cars.length)
@@ -749,6 +793,7 @@ export function useAppStore(userId?: string | null) {
     addDocument,
     deleteDocument,
     updateTheme,
+    updateAppName,
     resetGarage,
   }
 }

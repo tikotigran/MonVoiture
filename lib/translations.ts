@@ -2,6 +2,10 @@ export type Language = 'ru' | 'fr' | 'hy' | 'en'
 
 export const translations: Record<Language, Record<string, string>> = {
   ru: {
+    // App
+    'app.name': 'Mon Garage',
+    'app.title': 'Учет автомобилей',
+    
     // Header
     'header.title': 'Учет автомобилей',
     
@@ -229,6 +233,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'settings.yearDesc': 'Поле года выпуска автомобиля',
     'settings.theme': 'Тема оформления',
     'settings.themeDesc': 'Выберите цветовую тему приложения',
+    'settings.appName': 'Название приложения',
+    'settings.appNameDesc': 'Измените название вашего гаража',
     'settings.lightTheme': 'Светлая',
     'settings.darkTheme': 'Темная',
     'settings.systemTheme': 'Системная',
@@ -244,6 +250,10 @@ export const translations: Record<Language, Record<string, string>> = {
     'label.me': 'Я',
   },
   en: {
+    // App
+    'app.name': 'Mon Garage',
+    'app.title': 'Car Management',
+    
     'header.title': 'Car Accounting',
     'tabs.active': 'Active',
     'tabs.sold': 'Sold',
@@ -449,6 +459,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'settings.yearDesc': 'Car year field',
     'settings.theme': 'Theme',
     'settings.themeDesc': 'Choose app color theme',
+    'settings.appName': 'App Name',
+    'settings.appNameDesc': 'Change your garage name',
     'settings.lightTheme': 'Light',
     'settings.darkTheme': 'Dark',
     'settings.systemTheme': 'System',

@@ -32,6 +32,7 @@ interface SettingsSheetProps {
   partners: Partner[]
   currency: string
   language: 'ru' | 'fr' | 'hy' | 'en'
+  appName: string
   features: {
     sorting: boolean
     purchaseDate: boolean
@@ -49,6 +50,7 @@ interface SettingsSheetProps {
   onUpdateFeatures: (features: { sorting?: boolean; purchaseDate?: boolean; licensePlate?: boolean; search?: boolean; documents?: boolean; km?: boolean; year?: boolean }) => void
   onUpdateLanguage: (language: 'ru' | 'fr' | 'hy' | 'en') => void
   onUpdateTheme: (theme: 'light' | 'dark' | 'system') => void
+  onUpdateAppName: (appName: string) => void
   onResetGarage?: () => void
 }
 
@@ -59,8 +61,9 @@ export function SettingsSheet({
   partners,
   currency,
   language,
-  theme,
+  appName,
   features,
+  theme,
   onAddPartner,
   onDeletePartner,
   onUpdatePartner,
@@ -68,6 +71,7 @@ export function SettingsSheet({
   onUpdateFeatures,
   onUpdateLanguage,
   onUpdateTheme,
+  onUpdateAppName,
   onResetGarage,
 }: SettingsSheetProps) {
   const [newPartnerName, setNewPartnerName] = useState('')
@@ -362,6 +366,16 @@ export function SettingsSheet({
                     <SelectItem value="£">£ GBP</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="appName">{t('settings.appName', language)}</Label>
+                <Input
+                  id="appName"
+                  value={appName}
+                  onChange={(e) => onUpdateAppName(e.target.value)}
+                  placeholder={t('settings.appNameDesc', language)}
+                />
               </div>
             </div>
           </div>
