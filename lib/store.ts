@@ -30,92 +30,20 @@ const defaultState: AppState = {
 }
 
 const loadState = (userId?: string): AppState => {
-  // Try localStorage first (emergency recovery)
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) {
-      const state = JSON.parse(saved)
-      
-      // Emergency recovery: if Firebase has no data but localStorage does
-      if (state.cars && state.cars.length > 0) {
-        console.log('[store] Emergency recovery: found', state.cars.length, 'cars in localStorage')
-        return state
-      }
-      
-      // Migrate old French "Moi" to Russian "Я"
-      if (state.settings?.partners) {
-        state.settings.partners = state.settings.partners.map((p: Partner) =>
-          p.id === 'me' && p.name === 'Moi' ? { ...p, name: 'Я' } : p
-        )
-      }
-      
-      // Ensure default partner exists
-      if (!state.settings?.partners?.some((p: Partner) => p.id === 'me')) {
-        state.settings = { ...state.settings, partners: [{ id: 'me', name: 'Я' }, ...(state.settings?.partners || [])] }
-      }
-      
-      // Ensure new fields exist with defaults
-      if (!state.settings.theme) {
-        state.settings.theme = 'system'
-      }
-      
-      if (!state.settings.language || !['ru', 'fr', 'hy', 'en'].includes(state.settings.language)) {
-        state.settings.language = 'ru'
-      }
-      
-      if (!state.settings.userRole) {
-        state.settings.userRole = 'admin'
-      }
-      
-      if (!state.settings.appName) {
-        state.settings.appName = 'Mon Garage'
-      }
-      
-      return state
-    }
-  } catch (error) {
-    console.error('[store] Failed to load state from localStorage:', error)
-  }
-  
+  // DISABLED: No local storage, only Firebase
+  console.log('[store] Local storage disabled - using Firebase only')
   return defaultState
 }
 
 const loadStateFromLocal = (): AppState => {
-  return loadState()
+  // DISABLED: No local storage, only Firebase
+  console.log('[store] Local storage disabled - using Firebase only')
+  return defaultState
 }
 
 function saveStateToLocal(state: AppState) {
-  if (typeof window === 'undefined') return
-  try {
-    // Create a clean state object to avoid circular references
-    const cleanState = {
-      ...state,
-      settings: {
-        ...state.settings,
-        theme: state.settings.theme || 'system',
-        language: state.settings.language || 'ru',
-        features: {
-          ...state.settings.features,
-        },
-      }
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanState))
-  } catch (error) {
-    console.error('Failed to save state:', error)
-    // Если хранилище переполнено, попробуем сохранить только машины
-    if (error instanceof Error && error.name === 'QuotaExceededError') {
-      try {
-        const minimalState = {
-          cars: state.cars,
-          settings: state.settings,
-        }
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(minimalState))
-        console.log('[store] Saved minimal state due to quota exceeded')
-      } catch (e) {
-        console.error('Failed to save even minimal state:', e)
-      }
-    }
-  }
+  // DISABLED: No local storage, only Firebase
+  console.log('[store] Local storage disabled - using Firebase only')
 }
 
 const loadStateFromFirestore = async (userId: string): Promise<AppState | null> => {
@@ -296,37 +224,29 @@ export function useAppStore(userId?: string | null) {
     const loadState = async () => {
       console.log('[store] Starting loadState for user:', userId)
       
-      // First try localStorage (emergency recovery)
-      const localState = loadStateFromLocal()
-      if (localState.cars && localState.cars.length > 0) {
-        console.log('[store] Found local data, using as fallback')
-        setState(localState)
-        setIsLoaded(true)
-      }
-
-      // Then try Firebase
+      // Only use Firebase
       if (userId) {
         try {
           const firestoreState = await loadStateFromFirestore(userId)
           if (isSubscribed) {
-            if (firestoreState && (firestoreState.cars.length > 0 || firestoreState.documents.length > 0)) {
+            if (firestoreState) {
               console.log('[store] Loaded from Firestore:', firestoreState.cars.length, 'cars')
               setState(firestoreState)
-              saveStateToLocal(firestoreState)
-            } else if (localState.cars.length === 0) {
-              // Only use Firebase state if localStorage is empty
-              setState(firestoreState || localState)
+            } else {
+              setState(defaultState)
             }
             setIsLoaded(true)
           }
         } catch (error) {
-          console.error('[store] Firebase load failed, using local state:', error)
+          console.error('[store] Firebase load failed, using default state:', error)
           if (isSubscribed) {
+            setState(defaultState)
             setIsLoaded(true)
           }
         }
       } else {
         if (isSubscribed) {
+          setState(defaultState)
           setIsLoaded(true)
         }
       }
@@ -340,10 +260,9 @@ export function useAppStore(userId?: string | null) {
   }, [userId])
 
   useEffect(() => {
-    if (isLoaded) {
-      saveStateToLocal(state)
-    }
-  }, [state, isLoaded])
+    // DISABLED: No local storage auto-save
+    console.log('[store] Local storage auto-save disabled - using Firebase only')
+  }, [state])
 
   useEffect(() => {
     if (!isLoaded || !userId || !db) return
