@@ -273,9 +273,15 @@ export function SettingsSheet({
             </CollapsibleContent>
           </Collapsible>
 
-          <div className="space-y-4">
-            <Label>{t('settings.features', language)}</Label>
-            <div className="space-y-3">
+          <Collapsible open={openFeatures} onOpenChange={setOpenFeatures}>
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent cursor-pointer">
+                <Label className="cursor-pointer">{t('settings.features', language)}</Label>
+                <ChevronDown className={`w-4 h-4 transition-transform ${openFeatures ? 'rotate-180' : ''}`} />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-4">
+              <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="font-medium">{t('settings.sorting', language)}</div>
@@ -353,11 +359,18 @@ export function SettingsSheet({
                 />
               </div>
             </div>
-          </div>
+            </CollapsibleContent>
+          </Collapsible>
 
-          <div className="space-y-4">
-            <Label>{t('settings.language', language)}</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Collapsible open={openLanguage} onOpenChange={setOpenLanguage}>
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent cursor-pointer">
+                <Label className="cursor-pointer">{t('settings.language', language)}</Label>
+                <ChevronDown className={`w-4 h-4 transition-transform ${openLanguage ? 'rotate-180' : ''}`} />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="language">{t('label.language', language)}</Label>
                 <Select value={language} onValueChange={(value: 'ru' | 'fr' | 'hy' | 'en') => onUpdateLanguage(value)}>
@@ -399,10 +412,43 @@ export function SettingsSheet({
               />
               <p className="text-xs text-muted-foreground">{t('settings.appNameDesc', language)}</p>
             </div>
-          </div>
+            </CollapsibleContent>
+          </Collapsible>
+
+          <Collapsible open={openTheme} onOpenChange={setOpenTheme}>
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent cursor-pointer">
+                <Label className="cursor-pointer">{t('settings.theme', language)}</Label>
+                <ChevronDown className={`w-4 h-4 transition-transform ${openTheme ? 'rotate-180' : ''}`} />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>{t('settings.theme', language)}</Label>
+                <Select value={theme} onValueChange={(value: 'light' | 'dark' | 'system') => onUpdateTheme(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="light">{t('settings.lightTheme', language)}</SelectItem>
+                    <SelectItem value="dark">{t('settings.darkTheme', language)}</SelectItem>
+                    <SelectItem value="system">{t('settings.systemTheme', language)}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
 
           {onResetGarage && (
-            <div className="space-y-4 border-t pt-4">
+            <Collapsible open={openDanger} onOpenChange={setOpenDanger}>
+              <CollapsibleTrigger asChild>
+                <div className="flex items-center justify-between p-3 rounded-lg border border-destructive/20 hover:bg-destructive/10 cursor-pointer">
+                  <Label className="cursor-pointer text-destructive">{t('settings.dangerZone', language)}</Label>
+                  <ChevronDown className={`w-4 h-4 transition-transform text-destructive ${openDanger ? 'rotate-180' : ''}`} />
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-4">
+                <div className="space-y-4 border-t pt-4">
               <div 
                 className="cursor-pointer hover:bg-destructive/10 p-2 rounded-lg transition-colors"
                 onClick={handleOpenResetDialog}
@@ -412,7 +458,9 @@ export function SettingsSheet({
                 </Label>
               </div>
             </div>
-          )}
+                </CollapsibleContent>
+              </Collapsible>
+            )}
 
           {/* Диалог подтверждения сброса */}
           <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
