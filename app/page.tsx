@@ -339,6 +339,7 @@ export default function Home() {
         partners={state.settings.partners}
         currency={state.settings.currency}
         language={state.settings.language}
+        appName={state.settings.appName}
         theme={state.settings.theme}
         features={state.settings.features || { sorting: true, purchaseDate: true, licensePlate: true, km: true, year: true }}
         onAddPartner={addPartner}
@@ -347,6 +348,7 @@ export default function Home() {
         onUpdateCurrency={updateCurrency}
         onUpdateFeatures={updateFeatures}
         onUpdateLanguage={updateLanguage}
+        onUpdateAppName={updateAppName}
         onUpdateTheme={updateTheme}
         onResetGarage={resetGarage}
       />
