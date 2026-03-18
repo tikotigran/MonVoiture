@@ -18,6 +18,7 @@ interface HeaderProps {
   onSearch: (query: string) => void
   searchQuery: string
   language?: 'ru' | 'fr' | 'hy' | 'en'
+  appName?: string
   showSearch?: boolean
   onUpdateLanguage?: (language: 'ru' | 'fr' | 'hy' | 'en') => void
 }
@@ -28,6 +29,7 @@ export function Header({
   onSearch, 
   searchQuery, 
   language = 'ru', 
+  appName = 'EDVI AUTO',
   showSearch = true,
   onUpdateLanguage
 }: HeaderProps) {
@@ -39,7 +41,7 @@ export function Header({
           <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary">
             <Car className="w-5 h-5 text-primary-foreground" />
           </div>
-          <h1 className="text-lg font-semibold">EDVI AUTO</h1>
+          <h1 className="text-lg font-semibold">{appName}</h1>
         </div>
 
         {/* Правая часть */}
