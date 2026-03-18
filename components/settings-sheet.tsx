@@ -81,12 +81,22 @@ export function SettingsSheet({
   const [showResetDialog, setShowResetDialog] = useState(false)
   const [resetPassword, setResetPassword] = useState('')
   const [resetError, setResetError] = useState('')
+  const [openSections, setOpenSections] = useState({
+    // Add sections here
+  })
 
   useEffect(() => {
     if (open) {
       setTempCurrency(currency)
     }
   }, [open, currency])
+
+  const toggleSection = (section: keyof typeof openSections) => {
+    setOpenSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }))
+  }
 
   const handleAddPartner = () => {
     if (!newPartnerName.trim()) return
