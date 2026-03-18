@@ -9,7 +9,7 @@ const _geist = Geist({ subsets: ["latin", "cyrillic"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'EDVI AUTO - Учёт расходов на авто',
+  title: 'Mon Garage - Учёт расходов на авто',
   description: 'Приложение для учёта покупки и продажи автомобилей',
   generator: 'v0.app',
   manifest: '/manifest.json',

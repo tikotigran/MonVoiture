@@ -26,6 +26,6 @@
   </g>
   
   <!-- Текст -->
-  <text x="256" y="420" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="42" font-weight="bold">Автоучет</text>
+  <text x="256" y="420" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="42" font-weight="bold">Mon Garage</text>
   <text x="256" y="460" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="24" opacity="0.9">Учет автомобилей</text>
 </svg>

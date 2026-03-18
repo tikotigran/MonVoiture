@@ -1,6 +1,6 @@
 {
-  "name": "Автоучет",
-  "short_name": "Автоучет",
+  "name": "Mon Garage",
+  "short_name": "Mon Garage",
   "description": "Учет автомобилей и финансовых операций",
   "start_url": "/",
   "display": "standalone",
