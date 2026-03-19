@@ -72,8 +72,12 @@ const loadStateFromFirestore = async (userId: string): Promise<AppState | null> 
     const carsSnap = await getDocs(carsRef)
     const cars: Car[] = []
     
+    console.log(`[store] Found ${carsSnap.docs.length} cars in Firebase`)
+    
     for (const carDoc of carsSnap.docs) {
       const carData = carDoc.data() as Omit<Car, 'id' | 'expenses'>
+      console.log(`[store] Car data for ${carDoc.id}:`, carData)
+      
       if (carData.deleted !== true) {
         // Load expenses for this car
         const expensesRef = collection(db, 'users', userId, 'cars', carDoc.id, 'expenses')
@@ -84,6 +88,9 @@ const loadStateFromFirestore = async (userId: string): Promise<AppState | null> 
           expenses.push({ ...expenseData, id: expenseDoc.id })
         })
         console.log(`[store] Loaded ${expenses.length} expenses for car ${carDoc.id}`)
+        
+        // Check if checklist exists in car data
+        console.log(`[store] Checklist for car ${carDoc.id}:`, carData.checklist)
         
         cars.push({ ...carData, id: carDoc.id, expenses })
       }
