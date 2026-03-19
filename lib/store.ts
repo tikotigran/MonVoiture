@@ -42,6 +42,7 @@ const loadStateFromFirestore = async (userId: string): Promise<AppState | null> 
     
     if (settingsSnap.exists()) {
       const settingsData = settingsSnap.data()
+      console.log('[store] Settings data from Firebase:', settingsData)
       // Clean up old properties that might exist in Firebase
       const { reminders, notifications, userRole, ...cleanSettings } = settingsData as any
       settings = {
@@ -52,6 +53,9 @@ const loadStateFromFirestore = async (userId: string): Promise<AppState | null> 
         appName: cleanSettings.appName || defaultState.settings.appName,
         features: cleanSettings.features || defaultState.settings.features,
       } as AppSettings
+      console.log('[store] Final settings after loading:', settings)
+    } else {
+      console.log('[store] No settings found in Firebase, using defaults')
     }
 
     // Load documents
@@ -63,16 +67,28 @@ const loadStateFromFirestore = async (userId: string): Promise<AppState | null> 
       documents.push({ ...documentData, id: doc.id })
     })
 
-    // Load cars
+    // Load cars and their expenses
     const carsRef = collection(db, 'users', userId, 'cars')
     const carsSnap = await getDocs(carsRef)
     const cars: Car[] = []
-    carsSnap.forEach((doc) => {
-      const carData = doc.data() as Omit<Car, 'id'>
+    
+    for (const carDoc of carsSnap.docs) {
+      const carData = carDoc.data() as Omit<Car, 'id' | 'expenses'>
       if (carData.deleted !== true) {
-        cars.push({ ...carData, id: doc.id })
+        // Load expenses for this car
+        const expensesRef = collection(db, 'users', userId, 'cars', carDoc.id, 'expenses')
+        const expensesSnap = await getDocs(expensesRef)
+        const expenses: Expense[] = []
+        expensesSnap.forEach((expenseDoc) => {
+          const expenseData = expenseDoc.data() as Omit<Expense, 'id'>
+          expenses.push({ ...expenseData, id: expenseDoc.id })
+        })
+        console.log(`[store] Loaded ${expenses.length} expenses for car ${carDoc.id}`)
+        
+        cars.push({ ...carData, id: carDoc.id, expenses })
       }
-    })
+    }
+    console.log(`[store] Loaded ${cars.length} cars with expenses from Firebase`)
     
     return { cars, documents, settings }
     
