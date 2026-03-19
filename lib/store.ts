@@ -75,19 +75,27 @@ const loadStateFromFirestore = async (userId: string): Promise<AppState | null> 
     console.log(`[store] Found ${carsSnap.docs.length} cars in Firebase`)
     
     for (const carDoc of carsSnap.docs) {
-      const carData = carDoc.data() as Omit<Car, 'id' | 'expenses'>
+      const carData = carDoc.data() as Omit<Car, 'id'>
       console.log(`[store] Car data for ${carDoc.id}:`, carData)
       
       if (carData.deleted !== true) {
-        // Load expenses for this car
-        const expensesRef = collection(db, 'users', userId, 'cars', carDoc.id, 'expenses')
-        const expensesSnap = await getDocs(expensesRef)
-        const expenses: Expense[] = []
-        expensesSnap.forEach((expenseDoc) => {
-          const expenseData = expenseDoc.data() as Omit<Expense, 'id'>
-          expenses.push({ ...expenseData, id: expenseDoc.id })
-        })
-        console.log(`[store] Loaded ${expenses.length} expenses for car ${carDoc.id}`)
+        // Check if expenses are stored in car data or separate collection
+        let expenses: Expense[] = []
+        
+        if (carData.expenses && Array.isArray(carData.expenses)) {
+          // Expenses are stored as part of car data
+          expenses = carData.expenses
+          console.log(`[store] Found ${expenses.length} expenses in car data for ${carDoc.id}`)
+        } else {
+          // Load expenses from separate collection
+          const expensesRef = collection(db, 'users', userId, 'cars', carDoc.id, 'expenses')
+          const expensesSnap = await getDocs(expensesRef)
+          expensesSnap.forEach((expenseDoc) => {
+            const expenseData = expenseDoc.data() as Omit<Expense, 'id'>
+            expenses.push({ ...expenseData, id: expenseDoc.id })
+          })
+          console.log(`[store] Loaded ${expenses.length} expenses from separate collection for ${carDoc.id}`)
+        }
         
         // Check if checklist exists in car data
         console.log(`[store] Checklist for car ${carDoc.id}:`, carData.checklist)
