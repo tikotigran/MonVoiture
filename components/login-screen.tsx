@@ -76,7 +76,7 @@ export function LoginScreen({ onLogin, onRegister, error = '', isLoading = false
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">
-              {t('message.password', language)}
+              Пароль
             </label>
             <div className="relative">
               <Input
