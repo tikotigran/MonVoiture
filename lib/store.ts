@@ -374,30 +374,37 @@ export function useAppStore(userId?: string | null) {
     const settingsData = state.settings
     const settingsPromises = []
     
+    // Validate and sanitize settings before saving
+    const cleanCurrency = settingsData.currency || defaultState.settings.currency
+    const cleanLanguage = settingsData.language || defaultState.settings.language
+    const cleanTheme = settingsData.theme || defaultState.settings.theme
+    const cleanAppName = settingsData.appName || defaultState.settings.appName
+    const cleanFeatures = settingsData.features || defaultState.settings.features
+    
     // Save each setting as a separate document
     settingsPromises.push(
       setDoc(doc(db, 'users', userId, 'settings', 'currency'), { 
-        value: settingsData.currency 
+        value: cleanCurrency 
       })
     )
     settingsPromises.push(
       setDoc(doc(db, 'users', userId, 'settings', 'language'), { 
-        value: settingsData.language 
+        value: cleanLanguage 
       })
     )
     settingsPromises.push(
       setDoc(doc(db, 'users', userId, 'settings', 'theme'), { 
-        value: settingsData.theme 
+        value: cleanTheme 
       })
     )
     settingsPromises.push(
       setDoc(doc(db, 'users', userId, 'settings', 'appName'), { 
-        value: settingsData.appName 
+        value: cleanAppName 
       })
     )
     settingsPromises.push(
       setDoc(doc(db, 'users', userId, 'settings', 'features'), { 
-        items: settingsData.features 
+        items: cleanFeatures 
       })
     )
     
@@ -861,22 +868,33 @@ export function useAppStore(userId?: string | null) {
     if (userId && db && isLoaded) {
       console.log('[store] Auto-saving settings to Firestore as individual documents')
       
-      const settingsPromises = [
-        setDoc(doc(db, 'users', userId, 'settings', 'currency'), 
-          { currency: state.settings.currency }),
-        setDoc(doc(db, 'users', userId, 'settings', 'language'), 
-          { language: state.settings.language }),
-        setDoc(doc(db, 'users', userId, 'settings', 'theme'), 
-          { theme: state.settings.theme }),
-        setDoc(doc(db, 'users', userId, 'settings', 'appName'), 
-          { appName: state.settings.appName }),
-        setDoc(doc(db, 'users', userId, 'settings', 'features'), 
-          { features: state.settings.features }),
-      ]
+      const timeoutId = setTimeout(() => {
+        // Validate and sanitize settings before saving
+        const cleanCurrency = state.settings.currency || defaultState.settings.currency
+        const cleanLanguage = state.settings.language || defaultState.settings.language
+        const cleanTheme = state.settings.theme || defaultState.settings.theme
+        const cleanAppName = state.settings.appName || defaultState.settings.appName
+        const cleanFeatures = state.settings.features || defaultState.settings.features
+        
+        const settingsPromises = [
+          setDoc(doc(db, 'users', userId, 'settings', 'currency'), 
+            { currency: cleanCurrency }),
+          setDoc(doc(db, 'users', userId, 'settings', 'language'), 
+            { language: cleanLanguage }),
+          setDoc(doc(db, 'users', userId, 'settings', 'theme'), 
+            { theme: cleanTheme }),
+          setDoc(doc(db, 'users', userId, 'settings', 'appName'), 
+            { appName: cleanAppName }),
+          setDoc(doc(db, 'users', userId, 'settings', 'features'), 
+            { features: cleanFeatures }),
+        ]
+        
+        Promise.all(settingsPromises)
+          .then(() => console.log('[store] Settings auto-saved to Firestore'))
+          .catch((error) => console.error('[store] Failed to auto-save settings:', error))
+      }, 1000) // 1 second debounce
       
-      Promise.all(settingsPromises)
-        .then(() => console.log('[store] Settings auto-saved to Firestore'))
-        .catch((error) => console.error('[store] Failed to auto-save settings:', error))
+      return () => clearTimeout(timeoutId)
     }
   }, [userId, db, isLoaded, state.settings])
 
