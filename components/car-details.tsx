@@ -125,6 +125,21 @@ export function CarDetails({
     setEditingExpense(null)
   }
 
+  const handleSell = () => {
+    if (!salePrice) return
+    onSell(parseFloat(salePrice), saleDate)
+    setSalePrice('')
+    setSaleDate(new Date().toISOString().split('T')[0])
+    setShowSellSheet(false)
+  }
+
+  const handleUpdateSoldCar = () => {
+    if (!salePrice || !onUpdateSoldCar) return
+    onUpdateSoldCar(parseFloat(salePrice), saleDate)
+    setSalePrice(car.salePrice?.toString() || '')
+    setShowSellSheet(false)
+  }
+
   const totalExpenses = car.expenses.reduce((sum, e) => sum + e.amount, 0)
   const totalInvested = (car.purchasePrice || 0) + totalExpenses
   const profit = car.salePrice ? car.salePrice - totalInvested : 0
@@ -335,19 +350,13 @@ export function CarDetails({
           {/* Documents Tab */}
           {showDocuments && activeTab === 'documents' && (
             <CardContent className="pt-4">
-              {onAddDocument && onDeleteDocument ? (
-                <CarDocuments
-                  car={car}
-                  documents={documents}
-                  onAddDocument={onAddDocument}
-                  onDeleteDocument={onDeleteDocument}
-                  language={language}
-                />
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>Функция документов недоступна</p>
-                </div>
-              )}
+              <CarDocuments
+                car={car}
+                documents={documents}
+                onAddDocument={onAddDocument}
+                onDeleteDocument={onDeleteDocument}
+                language={language}
+              />
             </CardContent>
           )}
 
@@ -506,6 +515,8 @@ export function CarDetails({
       <AddExpenseForm
         open={showAddExpense}
         onOpenChange={setShowAddExpense}
+        partners={[]}
+        isPartnership={false}
         onAdd={onAddExpense}
         language={language}
       />
@@ -623,25 +634,17 @@ export function CarDetails({
                 onChange={(e) => setEditDate(e.target.value)}
               />
             </div>
-            {car.isPartnership && (
-              <div className="space-y-2">
-                <Label htmlFor="edit-paidBy">{t('label.whoPaid', language)}</Label>
-                <Select value={editPaidBy} onValueChange={setEditPaidBy}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {partners
-                      .filter((p) => car.partnerShares?.[p.id])
-                      .map((partner) => (
-                        <SelectItem key={partner.id} value={partner.id}>
-                          {partner.name}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="edit-paidBy">{t('label.whoPaid', language)}</Label>
+              <Select value={editPaidBy} onValueChange={setEditPaidBy}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="me">{t('label.me', language)}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <Button
               className="w-full"
               onClick={handleSaveExpense}
