@@ -36,6 +36,7 @@ const loadStateFromFirestore = async (userId: string): Promise<AppState | null> 
     console.log('[store] Starting loadStateFromFirestore for user:', userId)
     
     // Load settings from individual documents like cars and documents
+    console.log('[store] Loading settings from Firebase...')
     const settingsPromises = [
       getDoc(doc(db, 'users', userId, 'settings', 'partners')),
       getDoc(doc(db, 'users', userId, 'settings', 'currency')),
@@ -56,16 +57,116 @@ const loadStateFromFirestore = async (userId: string): Promise<AppState | null> 
     const appNameSnap = settingsSnapshots[4]
     const featuresSnap = settingsSnapshots[5]
     
-    settings = {
-      partners: partnersSnap.exists() ? (partnersSnap.data() as any).items || defaultState.settings.partners : defaultState.settings.partners,
-      currency: currencySnap.exists() ? (currencySnap.data() as any).value || defaultState.settings.currency : defaultState.settings.currency,
-      language: languageSnap.exists() ? (languageSnap.data() as any).value || defaultState.settings.language : defaultState.settings.language,
-      theme: themeSnap.exists() ? (themeSnap.data() as any).value || defaultState.settings.theme : defaultState.settings.theme,
-      appName: appNameSnap.exists() ? (appNameSnap.data() as any).value || defaultState.settings.appName : defaultState.settings.appName,
-      features: featuresSnap.exists() ? (featuresSnap.data() as any).items || defaultState.settings.features : defaultState.settings.features,
-    } as AppSettings
+    console.log('[store] Settings snapshots:', {
+      partners: partnersSnap.exists(),
+      currency: currencySnap.exists(),
+      language: languageSnap.exists(),
+      theme: themeSnap.exists(),
+      appName: appNameSnap.exists(),
+      features: featuresSnap.exists()
+    })
     
-    console.log('[store] Settings loaded from individual documents:', settings)
+    // Also check if old settings exist and migrate them
+    const oldSettingsRef = doc(db, 'users', userId, 'settings', 'main')
+    const oldSettingsSnap = await getDoc(oldSettingsRef)
+    console.log('[store] Old settings exist:', oldSettingsSnap.exists())
+    if (oldSettingsSnap.exists()) {
+      console.log('[store] Old settings data:', oldSettingsSnap.data())
+      console.log('[store] Migrating old settings to new structure...')
+      
+      const oldData = oldSettingsSnap.data() as any
+      const migrationPromises = []
+      
+      // Migrate each setting to new structure
+      if (oldData.partners) {
+        migrationPromises.push(
+          setDoc(doc(db, 'users', userId, 'settings', 'partners'), { 
+            items: oldData.partners 
+          })
+        )
+      }
+      if (oldData.currency) {
+        migrationPromises.push(
+          setDoc(doc(db, 'users', userId, 'settings', 'currency'), { 
+            value: oldData.currency 
+          })
+        )
+      }
+      if (oldData.language) {
+        migrationPromises.push(
+          setDoc(doc(db, 'users', userId, 'settings', 'language'), { 
+            value: oldData.language 
+          })
+        )
+      }
+      if (oldData.theme) {
+        migrationPromises.push(
+          setDoc(doc(db, 'users', userId, 'settings', 'theme'), { 
+            value: oldData.theme 
+          })
+        )
+      }
+      if (oldData.appName) {
+        migrationPromises.push(
+          setDoc(doc(db, 'users', userId, 'settings', 'appName'), { 
+            value: oldData.appName 
+          })
+        )
+      }
+      if (oldData.features) {
+        migrationPromises.push(
+          setDoc(doc(db, 'users', userId, 'settings', 'features'), { 
+            items: oldData.features 
+          })
+        )
+      }
+      
+      await Promise.all(migrationPromises)
+      console.log('[store] Migration completed, deleting old settings...')
+      
+      // Delete old settings after migration
+      await deleteDoc(oldSettingsRef)
+      console.log('[store] Old settings deleted')
+    } else {
+      // Create initial settings if none exist
+      console.log('[store] No old settings found, creating initial settings...')
+      const initialSettings = defaultState.settings
+      const initialPromises = []
+      
+      initialPromises.push(
+        setDoc(doc(db, 'users', userId, 'settings', 'partners'), { 
+          items: initialSettings.partners 
+        })
+      )
+      initialPromises.push(
+        setDoc(doc(db, 'users', userId, 'settings', 'currency'), { 
+          value: initialSettings.currency 
+        })
+      )
+      initialPromises.push(
+        setDoc(doc(db, 'users', userId, 'settings', 'language'), { 
+          value: initialSettings.language 
+        })
+      )
+      initialPromises.push(
+        setDoc(doc(db, 'users', userId, 'settings', 'theme'), { 
+          value: initialSettings.theme 
+        })
+      )
+      initialPromises.push(
+        setDoc(doc(db, 'users', userId, 'settings', 'appName'), { 
+          value: initialSettings.appName 
+        })
+      )
+      initialPromises.push(
+        setDoc(doc(db, 'users', userId, 'settings', 'features'), { 
+          items: initialSettings.features 
+        })
+      )
+      
+      await Promise.all(initialPromises)
+      console.log('[store] Initial settings created')
+    }
 
     // Load documents
     const documentsRef = collection(db, 'users', userId, 'documents')
