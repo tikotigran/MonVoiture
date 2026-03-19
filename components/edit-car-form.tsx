@@ -20,9 +20,7 @@ interface EditCarFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   car: Car | null
-  partners: Partner[]
   onUpdate: (carId: string, updates: Partial<Car>) => void
-  onAddPartner: (name: string) => void
   language?: 'ru' | 'fr' | 'hy' | 'en'
   features?: {
     purchaseDate: boolean
@@ -32,22 +30,16 @@ interface EditCarFormProps {
   }
 }
 
-export function EditCarForm({ open, onOpenChange, car, partners, onUpdate, onAddPartner, language = 'ru', features = { purchaseDate: true, licensePlate: true, km: true, year: true } }: EditCarFormProps) {
-  const [name, setName] = useState('')
-  const [licensePlate, setLicensePlate] = useState('')
-  const [year, setYear] = useState('')
-  const [km, setKm] = useState('')
-  const [purchasePrice, setPurchasePrice] = useState('')
-  const [purchaseDate, setPurchaseDate] = useState('')
-  const [salePrice, setSalePrice] = useState('')
-  const [saleDate, setSaleDate] = useState('')
-  const [isPartnership, setIsPartnership] = useState(false)
-  const [shares, setShares] = useState<{ [key: string]: number }>({})
-  const [newPartnerName, setNewPartnerName] = useState('')
-  const [showAddPartner, setShowAddPartner] = useState(false)
-  const [notes, setNotes] = useState('')
-
-  const hasPartners = partners.filter(p => p.id !== 'me').length >= 1
+export function EditCarForm({ open, onOpenChange, car, onUpdate, language = 'ru', features = { purchaseDate: true, licensePlate: true, km: true, year: true } }: EditCarFormProps) {
+  const [name, setName] = useState(car?.name || '')
+  const [licensePlate, setLicensePlate] = useState(car?.licensePlate || '')
+  const [year, setYear] = useState(car?.year?.toString() || '')
+  const [km, setKm] = useState(car?.km?.toString() || '')
+  const [purchasePrice, setPurchasePrice] = useState(car?.purchasePrice?.toString() || '')
+  const [purchaseDate, setPurchaseDate] = useState(car?.purchaseDate || new Date().toISOString().split('T')[0])
+  const [salePrice, setSalePrice] = useState(car?.salePrice?.toString() || '')
+  const [saleDate, setSaleDate] = useState(car?.saleDate || new Date().toISOString().split('T')[0])
+  const [notes, setNotes] = useState(car?.notes || '')
 
   useEffect(() => {
     if (car) {
@@ -55,67 +47,34 @@ export function EditCarForm({ open, onOpenChange, car, partners, onUpdate, onAdd
       setLicensePlate(car.licensePlate || '')
       setYear(car.year?.toString() || '')
       setKm(car.km?.toString() || '')
-      setPurchasePrice(car.purchasePrice.toString())
-      setPurchaseDate(car.purchaseDate)
+      setPurchasePrice(car.purchasePrice?.toString() || '')
+      setPurchaseDate(car.purchaseDate || new Date().toISOString().split('T')[0])
       setSalePrice(car.salePrice?.toString() || '')
-      setSaleDate(car.saleDate || '')
-      setIsPartnership(car.isPartnership)
-      setShares(car.partnerShares || {})
+      setSaleDate(car.saleDate || new Date().toISOString().split('T')[0])
       setNotes(car.notes || '')
     }
   }, [car])
 
-  const handlePartnershipChange = (checked: boolean) => {
-    setIsPartnership(checked)
-    if (checked && partners.length > 0) {
-      const equalShare = Math.floor(100 / partners.length)
-      const remainder = 100 - (equalShare * partners.length)
-      const newShares: { [key: string]: number } = {}
-      partners.forEach((p, index) => {
-        newShares[p.id] = equalShare + (index === 0 ? remainder : 0)
-      })
-      setShares(newShares)
-    }
-  }
-
-  const handleAddPartner = () => {
-    if (newPartnerName.trim()) {
-      onAddPartner(newPartnerName.trim())
-      setNewPartnerName('')
-      setShowAddPartner(false)
-    }
-  }
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!car || !name.trim()) return
+    if (!name.trim()) return
 
-    const partnerShares: { [key: string]: number } = {}
-    if (isPartnership) {
-      partners.forEach((p) => {
-        partnerShares[p.id] = shares[p.id] || 0
-      })
+    const carData: Partial<Car> = {
+      name: name.trim(),
     }
 
-    onUpdate(car.id, {
-      name: name.trim(),
-      licensePlate: licensePlate.trim() || undefined,
-      year: year.trim() ? parseInt(year.trim()) : undefined,
-      km: km.trim() ? parseInt(km.trim()) : undefined,
-      purchasePrice: parseFloat(purchasePrice.replace(/\s/g, '').replace(',', '.')) || 0,
-      purchaseDate,
-      salePrice: salePrice ? parseFloat(salePrice.replace(/\s/g, '').replace(',', '.')) || 0 : undefined,
-      saleDate: saleDate || undefined,
-      isPartnership,
-      partnerShares: isPartnership ? partnerShares : undefined,
-      notes: notes.trim(),
-      lastModified: new Date().toISOString(),
-    })
+    if (licensePlate.trim()) carData.licensePlate = licensePlate.trim()
+    if (year.trim()) carData.year = parseInt(year.trim())
+    if (km.trim()) carData.km = parseInt(km.trim())
+    if (purchasePrice.trim()) carData.purchasePrice = parseFloat(purchasePrice.trim())
+    if (purchaseDate.trim()) carData.purchaseDate = purchaseDate.trim()
+    if (notes.trim()) carData.notes = notes.trim()
+    if (salePrice.trim()) carData.salePrice = parseFloat(salePrice.trim())
+    if (saleDate.trim()) carData.saleDate = saleDate.trim()
 
+    onUpdate(car?.id || '', carData)
     onOpenChange(false)
   }
-
-  const totalShares = Object.values(shares).reduce((sum, s) => sum + s, 0)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -224,53 +183,16 @@ export function EditCarForm({ open, onOpenChange, car, partners, onUpdate, onAdd
               />
             </div>
 
-            <div className="flex items-center justify-between py-2">
-              <div>
-                <Label htmlFor="partnership">{t('status.partnership', language)}</Label>
-                <p className="text-sm text-muted-foreground">
-                  {t('description.shareExpenses', language)}
-                </p>
-              </div>
-              <Switch
-                id="partnership"
-                checked={isPartnership}
-                onCheckedChange={handlePartnershipChange}
-                disabled={!hasPartners}
+            <div className="space-y-2">
+              <Label htmlFor="saleDate">{t('label.saleDate', language)}</Label>
+              <Input
+                id="saleDate"
+                type="date"
+                value={saleDate}
+                onChange={(e) => setSaleDate(e.target.value)}
               />
             </div>
 
-            {isPartnership && hasPartners && (
-              <div className="space-y-3 p-4 bg-secondary/50 rounded-lg">
-                <Label>{t('label.partnerShares', language)}</Label>
-                {partners.map((partner) => (
-                  <div key={partner.id} className="flex items-center gap-3">
-                    <span className="flex-1 text-sm">{partner.name}</span>
-                    <Input
-                      type="number"
-                      className="w-24"
-                      placeholder="50"
-                      value={shares[partner.id] || ''}
-                      onChange={(e) =>
-                        setShares({
-                          ...shares,
-                          [partner.id]: parseFloat(e.target.value) || 0,
-                        })
-                      }
-                      min="0"
-                      max="100"
-                    />
-                    <span className="text-sm text-muted-foreground">%</span>
-                  </div>
-                ))}
-                {totalShares !== 100 && totalShares > 0 && (
-                  <p className="text-sm text-destructive">
-                    Сумма долей: {totalShares}% (должно быть 100%)
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Заметки */}
             <div className="space-y-2">
               <Label htmlFor="notes">{t('label.notes', language)}</Label>
               <textarea
@@ -285,7 +207,7 @@ export function EditCarForm({ open, onOpenChange, car, partners, onUpdate, onAdd
             <Button
               type="submit"
               className="w-full"
-              disabled={!name.trim() || (isPartnership && totalShares !== 100)}
+              disabled={!name.trim()}
             >
               {t('button.save', language)}
             </Button>
