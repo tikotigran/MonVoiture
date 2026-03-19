@@ -14,31 +14,8 @@ export const metadata: Metadata = {
   generator: 'v0.app',
   manifest: '/manifest.json',
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-      {
-        url: '/icons/icon-192x192.svg',
-        sizes: '192x192',
-        type: 'image/svg+xml',
-      },
-      {
-        url: '/icons/icon-512x512.svg',
-        sizes: '512x512',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
+    icon: '/icons/icon-192x192.svg',
+    apple: '/icons/icon-192x192.svg',
   },
 }
 
