@@ -134,11 +134,11 @@ export function SettingsSheet({
         </DialogHeader>
 
         <div className="space-y-6">
-          <Collapsible open={true} onOpenChange={() => {}}>
+          <Collapsible open={openFeatures} onOpenChange={setOpenFeatures}>
             <CollapsibleTrigger asChild>
               <div className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent cursor-pointer">
                 <Label className="cursor-pointer">{t('label.features', language)}</Label>
-                <ChevronDown className={`w-4 h-4 transition-transform rotate-180`} />
+                <ChevronDown className={`w-4 h-4 transition-transform ${openFeatures ? 'rotate-180' : ''}`} />
               </div>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-4">
@@ -184,31 +184,15 @@ export function SettingsSheet({
                     checked={features.km}
                     onCheckedChange={(checked) => onUpdateFeatures({ ...features, km: checked })}
                   />
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{t('settings.km', language)}</div>
-                  <div className="text-sm text-muted-foreground">{t('settings.kmDesc', language)}</div>
                 </div>
-                <Switch
-                  checked={features.km}
-                  onCheckedChange={(checked) => onUpdateFeatures({ km: checked })}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{t('settings.year', language)}</div>
-                  <div className="text-sm text-muted-foreground">{t('settings.yearDesc', language)}</div>
+                <div className="flex items-center justify-between">
+                  <Label>{t('label.year', language)}</Label>
+                  <Switch
+                    checked={features.year}
+                    onCheckedChange={(checked) => onUpdateFeatures({ ...features, year: checked })}
+                  />
                 </div>
-                <Switch
-                  checked={features.year}
-                  onCheckedChange={(checked) => onUpdateFeatures({ year: checked })}
-                />
               </div>
-            </div>
             </CollapsibleContent>
           </Collapsible>
 
@@ -221,47 +205,56 @@ export function SettingsSheet({
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="language">{t('label.language', language)}</Label>
-                <Select value={language} onValueChange={(value: 'ru' | 'fr' | 'hy' | 'en') => onUpdateLanguage(value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ru">🇷🇺 Русский</SelectItem>
-                    <SelectItem value="en">🇬🇧 English</SelectItem>
-                    <SelectItem value="fr">🇫🇷 Français</SelectItem>
-                    <SelectItem value="hy">🇦🇲 Հայերեն</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="space-y-2">
+                  <Label htmlFor="language">{t('label.language', language)}</Label>
+                  <Select value={language} onValueChange={(value: 'ru' | 'fr' | 'hy' | 'en') => onUpdateLanguage(value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ru">🇷🇺 Русский</SelectItem>
+                      <SelectItem value="en">🇬🇧 English</SelectItem>
+                      <SelectItem value="fr">🇫🇷 Français</SelectItem>
+                      <SelectItem value="hy">🇦🇲 Հայերեն</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="currency">{t('label.currency', language)}</Label>
+                  <Select value={currency} onValueChange={setTempCurrency}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="€">€ EUR</SelectItem>
+                      <SelectItem value="$">$ USD</SelectItem>
+                      <SelectItem value="₽">₽ RUB</SelectItem>
+                      <SelectItem value="£">£ GBP</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="currency">{t('label.currency', language)}</Label>
-                <Select value={currency} onValueChange={setTempCurrency}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="€">€ EUR</SelectItem>
-                    <SelectItem value="$">$ USD</SelectItem>
-                    <SelectItem value="₽">₽ RUB</SelectItem>
-                    <SelectItem value="£">£ GBP</SelectItem>
-                  </SelectContent>
-                </Select>
+            </CollapsibleContent>
+          </Collapsible>
+
+          <Collapsible open={true} onOpenChange={() => {}}>
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent cursor-pointer">
+                <Label className="cursor-pointer">{t('settings.appName', language)}</Label>
+                <ChevronDown className="w-4 h-4 transition-transform rotate-180" />
               </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="appName">{t('settings.appName', language)}</Label>
-              <Input
-                id="appName"
-                value={appName}
-                onChange={(e) => onUpdateAppName(e.target.value)}
-                placeholder={t('settings.appNameDesc', language)}
-              />
-              <p className="text-xs text-muted-foreground">{t('settings.appNameDesc', language)}</p>
-            </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="appName">{t('settings.appName', language)}</Label>
+                <Input
+                  id="appName"
+                  value={appName}
+                  onChange={(e) => onUpdateAppName(e.target.value)}
+                  placeholder={t('settings.appNameDesc', language)}
+                />
+                <p className="text-xs text-muted-foreground">{t('settings.appNameDesc', language)}</p>
+              </div>
             </CollapsibleContent>
           </Collapsible>
 
@@ -290,18 +283,18 @@ export function SettingsSheet({
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-4">
                 <div className="space-y-4 border-t pt-4">
-              <div 
-                className="cursor-pointer hover:bg-destructive/10 p-2 rounded-lg transition-colors"
-                onClick={handleOpenResetDialog}
-              >
-                <Label className="text-destructive hover:text-destructive/80 transition-colors cursor-pointer">
-                  {t('settings.resetGarage', language)}
-                </Label>
-              </div>
-            </div>
-                </CollapsibleContent>
-              </Collapsible>
-            )}
+                  <div 
+                    className="cursor-pointer hover:bg-destructive/10 p-2 rounded-lg transition-colors"
+                    onClick={handleOpenResetDialog}
+                  >
+                    <Label className="text-destructive hover:text-destructive/80 transition-colors cursor-pointer">
+                      {t('settings.resetGarage', language)}
+                    </Label>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
 
           {/* Диалог подтверждения сброса */}
           <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>

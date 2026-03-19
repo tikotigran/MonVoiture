@@ -62,6 +62,9 @@ export function AddCarForm({ open, onOpenChange, onAdd, language = 'ru', feature
 
     const carData: Omit<Car, 'id' | 'expenses' | 'status'> = {
       name: name.trim(),
+      isPartnership: false,
+      purchasePrice: 0,
+      purchaseDate: new Date().toISOString().split('T')[0],
     }
 
     // Add optional fields only if they have values
@@ -79,6 +82,7 @@ export function AddCarForm({ open, onOpenChange, onAdd, language = 'ru', feature
       km: km.trim() ? parseInt(km.trim()) : undefined,
       purchasePrice: parseFloat(purchasePrice),
       purchaseDate,
+      isPartnership: false,
       notes: notes.trim(),
     })
     success(t('message.carAdded', language), `Машина "${name.trim()}" успешно добавлена`)
