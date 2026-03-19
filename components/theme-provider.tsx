@@ -19,15 +19,7 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
   React.useEffect(() => {
     if (!mounted || !updateTheme) return
     
-    // Get theme from next-themes storage
-    try {
-      const storedTheme = localStorage.getItem('edvi-auto-theme')
-      if (storedTheme && storedTheme !== state.settings.theme) {
-        updateTheme(storedTheme as 'light' | 'dark' | 'system')
-      }
-    } catch (error) {
-      console.warn('Failed to access localStorage:', error)
-    }
+    // Removed localStorage sync - using only Firebase
   }, [mounted, state.settings.theme, updateTheme])
 
   // Sync store theme to next-themes
@@ -54,7 +46,6 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
       defaultTheme="system"
       enableSystem
       disableTransitionOnChange={false}
-      storageKey="edvi-auto-theme"
     >
       {children}
     </NextThemesProvider>

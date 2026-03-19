@@ -60,14 +60,10 @@ export function PWAInstall() {
 
   const handleDismiss = () => {
     setShowInstall(false)
-    localStorage.setItem('pwa-install-dismissed', 'true')
   }
 
   useEffect(() => {
-    const dismissed = localStorage.getItem('pwa-install-dismissed')
-    if (dismissed) {
-      setShowInstall(false)
-    }
+    // Removed localStorage for PWA install dismiss
   }, [])
 
   if (isInstalled || !showInstall || !deferredPrompt) {
