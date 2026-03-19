@@ -1,9 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Trash2, UserPlus, Edit2, AlertTriangle } from 'lucide-react'
-import { signInWithEmailAndPassword } from 'firebase/auth'
-import { auth } from '@/lib/firebase'
+import { Trash2, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -28,7 +26,6 @@ import {
 } from '@/components/ui/collapsible'
 import { ChevronDown } from 'lucide-react'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
-import type { Partner } from '@/lib/types'
 import type { User } from 'firebase/auth'
 import { t } from '@/lib/translations'
 
@@ -36,7 +33,6 @@ interface SettingsSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   user: User | null
-  partners: Partner[]
   currency: string
   language: 'ru' | 'fr' | 'hy' | 'en'
   appName: string
@@ -50,14 +46,11 @@ interface SettingsSheetProps {
     year: boolean
   }
   theme: 'light' | 'dark' | 'system'
-  onAddPartner: (name: string) => void
-  onDeletePartner: (id: string) => void
-  onUpdatePartner: (id: string, name: string) => void
   onUpdateCurrency: (currency: string) => void
-  onUpdateFeatures: (features: { sorting?: boolean; purchaseDate?: boolean; licensePlate?: boolean; search?: boolean; documents?: boolean; km?: boolean; year?: boolean }) => void
+  onUpdateFeatures: (features: any) => void
   onUpdateLanguage: (language: 'ru' | 'fr' | 'hy' | 'en') => void
-  onUpdateTheme: (theme: 'light' | 'dark' | 'system') => void
   onUpdateAppName: (appName: string) => void
+  onUpdateTheme: (theme: 'light' | 'dark' | 'system') => void
   onResetGarage?: () => void
 }
 
@@ -65,32 +58,22 @@ export function SettingsSheet({
   open,
   onOpenChange,
   user,
-  partners,
   currency,
   language,
   appName,
   features,
   theme,
-  onAddPartner,
-  onDeletePartner,
-  onUpdatePartner,
   onUpdateCurrency,
   onUpdateFeatures,
   onUpdateLanguage,
-  onUpdateTheme,
   onUpdateAppName,
+  onUpdateTheme,
   onResetGarage,
 }: SettingsSheetProps) {
-  const [newPartnerName, setNewPartnerName] = useState('')
   const [tempCurrency, setTempCurrency] = useState(currency)
-  const [editingPartnerId, setEditingPartnerId] = useState<string | null>(null)
-  const [editingPartnerName, setEditingPartnerName] = useState('')
   const [showResetDialog, setShowResetDialog] = useState(false)
   const [resetPassword, setResetPassword] = useState('')
   const [resetError, setResetError] = useState('')
-  
-  // Collapsible sections state
-  const [openPartners, setOpenPartners] = useState(true)
   const [openFeatures, setOpenFeatures] = useState(false)
   const [openLanguage, setOpenLanguage] = useState(false)
   const [openTheme, setOpenTheme] = useState(false)
@@ -101,29 +84,6 @@ export function SettingsSheet({
       setTempCurrency(currency)
     }
   }, [open, currency])
-
-  const handleAddPartner = () => {
-    if (!newPartnerName.trim()) return
-    onAddPartner(newPartnerName.trim())
-    setNewPartnerName('')
-  }
-
-  const handleEditPartner = (partnerId: string, currentName: string) => {
-    setEditingPartnerId(partnerId)
-    setEditingPartnerName(currentName)
-  }
-
-  const handleSavePartner = () => {
-    if (!editingPartnerName.trim() || !editingPartnerId) return
-    onUpdatePartner(editingPartnerId, editingPartnerName.trim())
-    setEditingPartnerId(null)
-    setEditingPartnerName('')
-  }
-
-  const handleCancelEdit = () => {
-    setEditingPartnerId(null)
-    setEditingPartnerName('')
-  }
 
   const handleResetGarage = async () => {
     console.log('[settings] Attempting garage reset')
@@ -174,165 +134,56 @@ export function SettingsSheet({
         </DialogHeader>
 
         <div className="space-y-6">
-          <Collapsible open={openPartners} onOpenChange={setOpenPartners}>
+          <Collapsible open={true} onOpenChange={() => {}}>
             <CollapsibleTrigger asChild>
               <div className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent cursor-pointer">
-                <Label className="cursor-pointer">{t('label.partners', language)}</Label>
-                <ChevronDown className={`w-4 h-4 transition-transform ${openPartners ? 'rotate-180' : ''}`} />
-              </div>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-4">
-              <div className="space-y-2">
-                {partners.map((partner) => (
-                <div
-                  key={partner.id}
-                  className="flex items-center justify-between p-2 rounded-lg border bg-card"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-sm font-medium text-primary">
-                        {partner.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    {editingPartnerId === partner.id ? (
-                      <Input
-                        value={editingPartnerName}
-                        onChange={(e) => setEditingPartnerName(e.target.value)}
-                        className="h-8 px-2 text-sm"
-                        placeholder={t('placeholder.partnerName', language)}
-                      />
-                    ) : (
-                      <span className="font-medium">{partner.name}</span>
-                    )}
-                    {partner.id === 'me' && (
-                      <span className="text-sm text-muted-foreground">
-                        ({t('label.me', language)})
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex gap-1">
-                    {editingPartnerId === partner.id ? (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-green-600 hover:text-green-700"
-                          onClick={handleSavePartner}
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                          onClick={handleCancelEdit}
-                        >
-                          ×
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                          onClick={() => handleEditPartner(partner.id, partner.name)}
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                        {partner.id !== 'me' && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={() => onDeletePartner(partner.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex gap-2">
-              <Input
-                placeholder={t('placeholder.partnerName', language)}
-                value={newPartnerName}
-                onChange={(e) => setNewPartnerName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddPartner()}
-              />
-              <Button onClick={handleAddPartner} disabled={!newPartnerName.trim()}>
-                <UserPlus className="w-4 h-4 mr-2" />
-                {t('button.addPartner', language)}
-              </Button>
-            </div>
-            </CollapsibleContent>
-          </Collapsible>
-
-          <Collapsible open={openFeatures} onOpenChange={setOpenFeatures}>
-            <CollapsibleTrigger asChild>
-              <div className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent cursor-pointer">
-                <Label className="cursor-pointer">{t('settings.features', language)}</Label>
-                <ChevronDown className={`w-4 h-4 transition-transform ${openFeatures ? 'rotate-180' : ''}`} />
+                <Label className="cursor-pointer">{t('label.features', language)}</Label>
+                <ChevronDown className={`w-4 h-4 transition-transform rotate-180`} />
               </div>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-4">
               <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{t('settings.sorting', language)}</div>
-                  <div className="text-sm text-muted-foreground">{t('settings.sortingDesc', language)}</div>
+                <div className="flex items-center justify-between">
+                  <Label>{t('label.sorting', language)}</Label>
+                  <Switch
+                    checked={features.sorting}
+                    onCheckedChange={(checked) => onUpdateFeatures({ ...features, sorting: checked })}
+                  />
                 </div>
-                <Switch
-                  checked={features.sorting}
-                  onCheckedChange={(checked) => onUpdateFeatures({ sorting: checked })}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{t('settings.purchaseDate', language)}</div>
-                  <div className="text-sm text-muted-foreground">{t('settings.purchaseDateDesc', language)}</div>
+                <div className="flex items-center justify-between">
+                  <Label>{t('label.purchaseDate', language)}</Label>
+                  <Switch
+                    checked={features.purchaseDate}
+                    onCheckedChange={(checked) => onUpdateFeatures({ ...features, purchaseDate: checked })}
+                  />
                 </div>
-                <Switch
-                  checked={features.purchaseDate}
-                  onCheckedChange={(checked) => onUpdateFeatures({ purchaseDate: checked })}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{t('settings.licensePlate', language)}</div>
-                  <div className="text-sm text-muted-foreground">{t('settings.licensePlateDesc', language)}</div>
+                <div className="flex items-center justify-between">
+                  <Label>{t('label.licensePlate', language)}</Label>
+                  <Switch
+                    checked={features.licensePlate}
+                    onCheckedChange={(checked) => onUpdateFeatures({ ...features, licensePlate: checked })}
+                  />
                 </div>
-                <Switch
-                  checked={features.licensePlate}
-                  onCheckedChange={(checked) => onUpdateFeatures({ licensePlate: checked })}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{t('settings.search', language)}</div>
-                  <div className="text-sm text-muted-foreground">{t('settings.searchDesc', language)}</div>
+                <div className="flex items-center justify-between">
+                  <Label>{t('label.search', language)}</Label>
+                  <Switch
+                    checked={features.search}
+                    onCheckedChange={(checked) => onUpdateFeatures({ ...features, search: checked })}
+                  />
                 </div>
-                <Switch
-                  checked={features.search}
-                  onCheckedChange={(checked) => onUpdateFeatures({ search: checked })}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{t('settings.documents', language)}</div>
-                  <div className="text-sm text-muted-foreground">{t('settings.documentsDesc', language)}</div>
+                <div className="flex items-center justify-between">
+                  <Label>{t('label.documents', language)}</Label>
+                  <Switch
+                    checked={features.documents}
+                    onCheckedChange={(checked) => onUpdateFeatures({ ...features, documents: checked })}
+                  />
                 </div>
-                <Switch
-                  checked={features.documents}
-                  onCheckedChange={(checked) => onUpdateFeatures({ documents: checked })}
+                <div className="flex items-center justify-between">
+                  <Label>{t('label.km', language)}</Label>
+                  <Switch
+                    checked={features.km}
+                    onCheckedChange={(checked) => onUpdateFeatures({ ...features, km: checked })}
+                  />
                 />
               </div>
               
