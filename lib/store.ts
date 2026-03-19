@@ -666,16 +666,33 @@ export function useAppStore(userId?: string | null) {
   }, [])
 
   const updateFeatures = useCallback((features: Partial<{ sorting: boolean; purchaseDate: boolean; licensePlate: boolean; search: boolean; documents: boolean; km: boolean; year: boolean }>) => {
-    setState((prev) => ({
-      ...prev,
-      settings: {
-        ...prev.settings,
-        features: {
-          ...prev.settings.features,
-          ...features,
+    console.log('[store] updateFeatures called with:', features)
+    setState((prev) => {
+      const currentFeatures = prev.settings.features || {
+        sorting: true,
+        purchaseDate: true,
+        licensePlate: true,
+        search: true,
+        documents: true,
+        km: true,
+        year: true,
+      }
+      
+      const newFeatures = {
+        ...currentFeatures,
+        ...features,
+      }
+      
+      console.log('[store] New features state:', newFeatures)
+      
+      return {
+        ...prev,
+        settings: {
+          ...prev.settings,
+          features: newFeatures,
         },
-      },
-    }))
+      }
+    })
   }, [])
 
   const addDocument = useCallback((document: Omit<Document, 'id' | 'uploadDate'>) => {
