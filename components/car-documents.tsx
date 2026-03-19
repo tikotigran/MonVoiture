@@ -122,7 +122,7 @@ export function CarDocuments({ car, documents, onAddDocument, onDeleteDocument, 
   }
 
   const getDocumentTypeLabel = (type: Document['type']) => {
-    return documentTypes.find(dt => dt.value === type)?.label || 'Другое'
+    return documentTypes.find(dt => dt.value === type)?.value || 'Другое'
   }
 
   const carDocuments = documents.filter(doc => doc.carId === car.id)

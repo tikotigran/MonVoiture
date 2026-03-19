@@ -39,13 +39,8 @@ export function useAuth(): UseAuthResult {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
       const user = userCredential.user
       
-      // Save additional user info to user profile
+      // Save additional user info to Firestore
       if (user) {
-        await user.updateProfile({
-          displayName: `${firstName} ${lastName}`.trim() || firstName
-        })
-        
-        // Save user metadata to Firestore
         // TODO: Save firstName, lastName, garageName to user profile
         console.log('User registered:', { firstName, lastName, garageName })
       }
