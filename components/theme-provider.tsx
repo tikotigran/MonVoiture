@@ -9,21 +9,32 @@ import { useAppStore } from '@/lib/store'
 
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
   const { state, updateTheme } = useAppStore()
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Sync theme with our store
   React.useEffect(() => {
-    if (updateTheme) {
-      // Get theme from next-themes storage
+    if (!mounted || !updateTheme) return
+    
+    // Get theme from next-themes storage
+    try {
       const storedTheme = localStorage.getItem('edvi-auto-theme')
       if (storedTheme && storedTheme !== state.settings.theme) {
         updateTheme(storedTheme as 'light' | 'dark' | 'system')
       }
+    } catch (error) {
+      console.warn('Failed to access localStorage:', error)
     }
-  }, [state.settings.theme, updateTheme])
+  }, [mounted, state.settings.theme, updateTheme])
 
   // Sync store theme to next-themes
   React.useEffect(() => {
-    if (state.settings.theme) {
+    if (!mounted || !state.settings.theme) return
+    
+    if (typeof window !== 'undefined') {
       const root = window.document.documentElement
       if (state.settings.theme === 'system') {
         const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
@@ -34,7 +45,7 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
         root.classList.add(state.settings.theme)
       }
     }
-  }, [state.settings.theme])
+  }, [mounted, state.settings.theme])
 
   return (
     <NextThemesProvider 
