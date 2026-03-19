@@ -540,7 +540,23 @@ export function useAppStore(userId?: string | null) {
         partners: [...prev.settings.partners, newPartner],
       },
     }))
-  }, [])
+    
+    // Save to Firebase immediately
+    if (userId && db) {
+      const settingsRef = doc(db, 'users', userId, 'settings', 'main')
+      const cleanSettings = {
+        partners: [...state.settings.partners, newPartner],
+        currency: state.settings.currency,
+        language: state.settings.language,
+        theme: state.settings.theme,
+        appName: state.settings.appName,
+        features: state.settings.features,
+      }
+      setDoc(settingsRef, cleanSettings, { merge: true })
+        .then(() => console.log('[store] Partner saved to Firestore'))
+        .catch((error) => console.error('[store] Failed to save partner:', error))
+    }
+  }, [userId, db, state.settings])
 
   const updatePartner = useCallback((partnerId: string, name: string) => {
     setState((prev) => ({
@@ -563,7 +579,23 @@ export function useAppStore(userId?: string | null) {
         partners: prev.settings.partners.filter((p) => p.id !== partnerId),
       },
     }))
-  }, [])
+    
+    // Save to Firebase immediately
+    if (userId && db) {
+      const settingsRef = doc(db, 'users', userId, 'settings', 'main')
+      const cleanSettings = {
+        partners: state.settings.partners.filter((p) => p.id !== partnerId),
+        currency: state.settings.currency,
+        language: state.settings.language,
+        theme: state.settings.theme,
+        appName: state.settings.appName,
+        features: state.settings.features,
+      }
+      setDoc(settingsRef, cleanSettings, { merge: true })
+        .then(() => console.log('[store] Partner deleted from Firestore'))
+        .catch((error) => console.error('[store] Failed to delete partner:', error))
+    }
+  }, [userId, db, state.settings])
 
   const updateCurrency = useCallback((currency: string) => {
     setState((prev) => ({
