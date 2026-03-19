@@ -130,6 +130,7 @@ async function saveStateToNewStructure(userId: string, state: AppState) {
       currency: state.settings.currency,
       language: state.settings.language,
       theme: state.settings.theme,
+      appName: state.settings.appName,
       features: state.settings.features,
     }
     const settingsRef = doc(db, 'users', userId, 'settings', 'main')
@@ -155,6 +156,7 @@ async function saveStateToFirestore(userId: string, state: AppState) {
       currency: state.settings.currency,
       language: state.settings.language,
       theme: state.settings.theme,
+      appName: state.settings.appName,
       features: state.settings.features,
     }
     const settingsRef = doc(db, 'users', userId, 'settings', 'main')
