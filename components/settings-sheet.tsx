@@ -126,25 +126,23 @@ export function SettingsSheet({
   }
 
   const handleResetGarage = async () => {
-    console.log('[settings] Attempting garage reset with password')
+    console.log('[settings] Attempting garage reset')
     
-    if (!user || !user.email) {
-      setResetError(t('settings.resetPasswordError', language))
+    if (!user) {
+      setResetError('Требуется авторизация')
       return
     }
 
-    try {
-      // Re-authenticate user with their password
-      await signInWithEmailAndPassword(auth, user.email, resetPassword)
-      console.log('[settings] Password verification successful')
+    // Simple confirmation - no re-authentication needed
+    if (resetPassword.trim() === 'DELETE') {
+      console.log('[settings] Confirmation received, resetting garage')
       
       onResetGarage?.()
       setShowResetDialog(false)
       setResetPassword('')
       setResetError('')
-    } catch (error: any) {
-      console.log('[settings] Password verification failed:', error.message)
-      setResetError(t('settings.resetPasswordError', language))
+    } else {
+      setResetError('Введите "DELETE" для подтверждения сброса гаража')
     }
   }
 
@@ -472,12 +470,12 @@ export function SettingsSheet({
                   <Input
                     id="reset-password"
                     type="password"
-                    placeholder={t('settings.resetPasswordPlaceholder', language)}
                     value={resetPassword}
                     onChange={(e) => {
                       setResetPassword(e.target.value)
                       setResetError('')
                     }}
+                    placeholder='Введите "DELETE" для подтверждения'
                   />
                   {resetError && (
                     <p className="text-sm text-destructive">{resetError}</p>
