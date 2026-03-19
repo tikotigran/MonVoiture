@@ -6,8 +6,6 @@ import { generateId } from './format'
 import { db } from './firebase'
 import { doc, getDoc, setDoc, collection, getDocs, query, where, writeBatch, deleteDoc } from 'firebase/firestore'
 
-const STORAGE_KEY = 'auto-uchet-data'
-
 const defaultState: AppState = {
   cars: [],
   documents: [],
@@ -27,80 +25,6 @@ const defaultState: AppState = {
       year: true,
     },
   },
-}
-
-function loadStateFromLocal(): AppState {
-  if (typeof window === 'undefined') return defaultState
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) {
-      const state = JSON.parse(saved)
-      
-      // Migrate old French "Moi" to Russian "Я"
-      if (state.settings?.partners) {
-        state.settings.partners = state.settings.partners.map((p: Partner) =>
-          p.id === 'me' && p.name === 'Moi' ? { ...p, name: 'Я' } : p
-        )
-      }
-      
-      // Ensure default partner exists
-      if (!state.settings?.partners?.some((p: Partner) => p.id === 'me')) {
-        state.settings = { ...state.settings, partners: [{ id: 'me', name: 'Я' }, ...(state.settings?.partners || [])] }
-      }
-      
-      // Ensure new fields exist with defaults
-      if (!state.settings.theme) {
-        state.settings.theme = 'system'
-      }
-      
-      if (!state.settings.language || !['ru', 'fr', 'hy', 'en'].includes(state.settings.language)) {
-        state.settings.language = 'ru'
-      }
-      
-      if (!state.settings.userRole) {
-        state.settings.userRole = 'admin'
-      }
-      
-      return state
-    }
-  } catch {
-    console.error('Failed to load state')
-  }
-  return defaultState
-}
-
-function saveStateToLocal(state: AppState) {
-  if (typeof window === 'undefined') return
-  try {
-    // Create a clean state object to avoid circular references
-    const cleanState = {
-      ...state,
-      settings: {
-        ...state.settings,
-        theme: state.settings.theme || 'system',
-        language: state.settings.language || 'ru',
-        features: {
-          ...state.settings.features,
-        },
-      }
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanState))
-  } catch (error) {
-    console.error('Failed to save state:', error)
-    // Если хранилище переполнено, попробуем сохранить только машины
-    if (error instanceof Error && error.name === 'QuotaExceededError') {
-      try {
-        const minimalState = {
-          cars: state.cars,
-          settings: state.settings,
-        }
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(minimalState))
-        console.log('[store] Saved minimal state due to quota exceeded')
-      } catch (e) {
-        console.error('Failed to save even minimal state:', e)
-      }
-    }
-  }
 }
 
 const loadStateFromFirestore = async (userId: string): Promise<AppState | null> => {
@@ -281,7 +205,7 @@ export function useAppStore(userId?: string | null) {
 
     async function init() {
       if (!userId) {
-        setState(loadStateFromLocal())
+        setState(defaultState)
         setIsLoaded(true)
         return
       }
@@ -292,10 +216,7 @@ export function useAppStore(userId?: string | null) {
       if (fromRemote) {
         setState(fromRemote)
       } else {
-        // try migrate from localStorage for first login
-        const local = loadStateFromLocal()
-        setState(local)
-        await saveStateToFirestore(userId, local)
+        setState(defaultState)
       }
       setIsLoaded(true)
     }
@@ -306,12 +227,6 @@ export function useAppStore(userId?: string | null) {
       cancelled = true
     }
   }, [userId])
-
-  useEffect(() => {
-    if (isLoaded) {
-      saveStateToLocal(state)
-    }
-  }, [state, isLoaded])
 
   useEffect(() => {
     if (!isLoaded || !userId || !db) return
