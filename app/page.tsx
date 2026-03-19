@@ -348,7 +348,15 @@ export default function Home() {
         language={state.settings.language}
         appName={state.settings.appName}
         theme={state.settings.theme}
-        features={state.settings.features || { sorting: true, purchaseDate: true, licensePlate: true, km: true, year: true }}
+        features={state.settings.features || { 
+          sorting: true, 
+          purchaseDate: true, 
+          licensePlate: true, 
+          search: true, 
+          documents: true,
+          km: true, 
+          year: true 
+        }}
         onUpdateCurrency={updateCurrency}
         onUpdateFeatures={updateFeatures}
         onUpdateLanguage={updateLanguage}
