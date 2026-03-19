@@ -71,6 +71,7 @@ export function SettingsSheet({
   onResetGarage,
 }: SettingsSheetProps) {
   const [tempCurrency, setTempCurrency] = useState(currency)
+  const [tempAppName, setTempAppName] = useState(appName)
   const [showResetDialog, setShowResetDialog] = useState(false)
   const [resetPassword, setResetPassword] = useState('')
   const [resetError, setResetError] = useState('')
@@ -78,12 +79,14 @@ export function SettingsSheet({
   const [openLanguage, setOpenLanguage] = useState(false)
   const [openTheme, setOpenTheme] = useState(false)
   const [openDanger, setOpenDanger] = useState(false)
+  const [openAppName, setOpenAppName] = useState(false)
 
   useEffect(() => {
     if (open) {
       setTempCurrency(currency)
+      setTempAppName(appName)
     }
-  }, [open, currency])
+  }, [open, currency, appName])
 
   const handleResetGarage = async () => {
     console.log('[settings] Attempting garage reset')
@@ -116,12 +119,16 @@ export function SettingsSheet({
     if (tempCurrency !== currency) {
       onUpdateCurrency(tempCurrency)
     }
+    if (tempAppName !== appName) {
+      onUpdateAppName(tempAppName)
+    }
     onOpenChange(false)
   }
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
       setTempCurrency(currency)
+      setTempAppName(appName)
     }
     onOpenChange(newOpen)
   }
@@ -137,56 +144,56 @@ export function SettingsSheet({
           <Collapsible open={openFeatures} onOpenChange={setOpenFeatures}>
             <CollapsibleTrigger asChild>
               <div className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent cursor-pointer">
-                <Label className="cursor-pointer">{t('label.features', language)}</Label>
+                <Label className="cursor-pointer">{t('settings.features', language)}</Label>
                 <ChevronDown className={`w-4 h-4 transition-transform ${openFeatures ? 'rotate-180' : ''}`} />
               </div>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-4">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <Label>{t('label.sorting', language)}</Label>
+                  <Label>{t('settings.sorting', language)}</Label>
                   <Switch
                     checked={features.sorting}
                     onCheckedChange={(checked) => onUpdateFeatures({ ...features, sorting: checked })}
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <Label>{t('label.purchaseDate', language)}</Label>
+                  <Label>{t('settings.purchaseDate', language)}</Label>
                   <Switch
                     checked={features.purchaseDate}
                     onCheckedChange={(checked) => onUpdateFeatures({ ...features, purchaseDate: checked })}
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <Label>{t('label.licensePlate', language)}</Label>
+                  <Label>{t('settings.licensePlate', language)}</Label>
                   <Switch
                     checked={features.licensePlate}
                     onCheckedChange={(checked) => onUpdateFeatures({ ...features, licensePlate: checked })}
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <Label>{t('label.search', language)}</Label>
+                  <Label>{t('settings.search', language)}</Label>
                   <Switch
                     checked={features.search}
                     onCheckedChange={(checked) => onUpdateFeatures({ ...features, search: checked })}
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <Label>{t('label.documents', language)}</Label>
+                  <Label>{t('settings.documents', language)}</Label>
                   <Switch
                     checked={features.documents}
                     onCheckedChange={(checked) => onUpdateFeatures({ ...features, documents: checked })}
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <Label>{t('label.km', language)}</Label>
+                  <Label>{t('settings.km', language)}</Label>
                   <Switch
                     checked={features.km}
                     onCheckedChange={(checked) => onUpdateFeatures({ ...features, km: checked })}
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <Label>{t('label.year', language)}</Label>
+                  <Label>{t('settings.year', language)}</Label>
                   <Switch
                     checked={features.year}
                     onCheckedChange={(checked) => onUpdateFeatures({ ...features, year: checked })}
@@ -237,11 +244,11 @@ export function SettingsSheet({
             </CollapsibleContent>
           </Collapsible>
 
-          <Collapsible open={true} onOpenChange={() => {}}>
+          <Collapsible open={openAppName} onOpenChange={setOpenAppName}>
             <CollapsibleTrigger asChild>
               <div className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent cursor-pointer">
                 <Label className="cursor-pointer">{t('settings.appName', language)}</Label>
-                <ChevronDown className="w-4 h-4 transition-transform rotate-180" />
+                <ChevronDown className={`w-4 h-4 transition-transform ${openAppName ? 'rotate-180' : ''}`} />
               </div>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-4">
@@ -249,8 +256,8 @@ export function SettingsSheet({
                 <Label htmlFor="appName">{t('settings.appName', language)}</Label>
                 <Input
                   id="appName"
-                  value={appName}
-                  onChange={(e) => onUpdateAppName(e.target.value)}
+                  value={tempAppName}
+                  onChange={(e) => setTempAppName(e.target.value)}
                   placeholder={t('settings.appNameDesc', language)}
                 />
                 <p className="text-xs text-muted-foreground">{t('settings.appNameDesc', language)}</p>
