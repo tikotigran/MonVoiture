@@ -35,28 +35,37 @@ const loadStateFromFirestore = async (userId: string): Promise<AppState | null> 
     }
     console.log('[store] Starting loadStateFromFirestore for user:', userId)
     
-    // Load settings
-    const settingsRef = doc(db, 'users', userId, 'settings', 'main')
-    const settingsSnap = await getDoc(settingsRef)
+    // Load settings from individual documents like cars and documents
+    const settingsPromises = [
+      getDoc(doc(db, 'users', userId, 'settings', 'partners')),
+      getDoc(doc(db, 'users', userId, 'settings', 'currency')),
+      getDoc(doc(db, 'users', userId, 'settings', 'language')),
+      getDoc(doc(db, 'users', userId, 'settings', 'theme')),
+      getDoc(doc(db, 'users', userId, 'settings', 'appName')),
+      getDoc(doc(db, 'users', userId, 'settings', 'features'))
+    ]
+    
+    const settingsSnapshots = await Promise.all(settingsPromises)
     let settings = defaultState.settings
     
-    if (settingsSnap.exists()) {
-      const settingsData = settingsSnap.data()
-      console.log('[store] Settings data from Firebase:', settingsData)
-      // Clean up old properties that might exist in Firebase
-      const { reminders, notifications, userRole, ...cleanSettings } = settingsData as any
-      settings = {
-        partners: cleanSettings.partners || defaultState.settings.partners,
-        currency: cleanSettings.currency || defaultState.settings.currency,
-        language: cleanSettings.language || defaultState.settings.language,
-        theme: cleanSettings.theme || defaultState.settings.theme,
-        appName: cleanSettings.appName || defaultState.settings.appName,
-        features: cleanSettings.features || defaultState.settings.features,
-      } as AppSettings
-      console.log('[store] Final settings after loading:', settings)
-    } else {
-      console.log('[store] No settings found in Firebase, using defaults')
-    }
+    // Extract settings from individual documents
+    const partnersSnap = settingsSnapshots[0]
+    const currencySnap = settingsSnapshots[1]
+    const languageSnap = settingsSnapshots[2]
+    const themeSnap = settingsSnapshots[3]
+    const appNameSnap = settingsSnapshots[4]
+    const featuresSnap = settingsSnapshots[5]
+    
+    settings = {
+      partners: partnersSnap.exists() ? (partnersSnap.data() as any).items || defaultState.settings.partners : defaultState.settings.partners,
+      currency: currencySnap.exists() ? (currencySnap.data() as any).value || defaultState.settings.currency : defaultState.settings.currency,
+      language: languageSnap.exists() ? (languageSnap.data() as any).value || defaultState.settings.language : defaultState.settings.language,
+      theme: themeSnap.exists() ? (themeSnap.data() as any).value || defaultState.settings.theme : defaultState.settings.theme,
+      appName: appNameSnap.exists() ? (appNameSnap.data() as any).value || defaultState.settings.appName : defaultState.settings.appName,
+      features: featuresSnap.exists() ? (featuresSnap.data() as any).items || defaultState.settings.features : defaultState.settings.features,
+    } as AppSettings
+    
+    console.log('[store] Settings loaded from individual documents:', settings)
 
     // Load documents
     const documentsRef = collection(db, 'users', userId, 'documents')
@@ -268,20 +277,45 @@ export function useAppStore(userId?: string | null) {
     console.log('[store] Current cars count:', state.cars.length)
     console.log('[store] Current documents count:', state.documents.length)
     
-    // Clean settings object to remove undefined fields
-    const cleanSettings = {
-      partners: state.settings.partners,
-      currency: state.settings.currency,
-      language: state.settings.language,
-      theme: state.settings.theme,
-      appName: state.settings.appName,
-      features: state.settings.features,
-    }
+    // Save settings as individual documents like cars and documents
+    const settingsData = state.settings
+    const settingsPromises = []
     
-    const settingsRef = doc(db, 'users', userId, 'settings', 'main')
-    setDoc(settingsRef, cleanSettings, { merge: true })
-      .then(() => console.log('[store] Settings auto-saved'))
-      .catch((error) => console.error('[store] Failed to auto-save settings:', error))
+    // Save each setting as a separate document
+    settingsPromises.push(
+      setDoc(doc(db, 'users', userId, 'settings', 'partners'), { 
+        items: settingsData.partners 
+      })
+    )
+    settingsPromises.push(
+      setDoc(doc(db, 'users', userId, 'settings', 'currency'), { 
+        value: settingsData.currency 
+      })
+    )
+    settingsPromises.push(
+      setDoc(doc(db, 'users', userId, 'settings', 'language'), { 
+        value: settingsData.language 
+      })
+    )
+    settingsPromises.push(
+      setDoc(doc(db, 'users', userId, 'settings', 'theme'), { 
+        value: settingsData.theme 
+      })
+    )
+    settingsPromises.push(
+      setDoc(doc(db, 'users', userId, 'settings', 'appName'), { 
+        value: settingsData.appName 
+      })
+    )
+    settingsPromises.push(
+      setDoc(doc(db, 'users', userId, 'settings', 'features'), { 
+        items: settingsData.features 
+      })
+    )
+    
+    Promise.all(settingsPromises)
+      .then(() => console.log('[store] Settings saved as individual documents'))
+      .catch((error) => console.error('[store] Failed to save settings:', error))
   }, [state.settings, isLoaded, userId])
 
   const addCar = useCallback((car: Omit<Car, 'id' | 'expenses' | 'status'>) => {
