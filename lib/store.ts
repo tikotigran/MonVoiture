@@ -455,7 +455,23 @@ export function useAppStore(userId?: string | null) {
           : car
       ),
     }))
-  }, [])
+    
+    // Save to Firebase immediately
+    if (userId && db) {
+      const carRef = doc(db, 'users', userId, 'cars', carId)
+      const updatedCar = state.cars.find(car => car.id === carId)
+      if (updatedCar) {
+        const carWithNewExpense = {
+          ...updatedCar,
+          expenses: [...updatedCar.expenses, newExpense],
+          lastModified: new Date().toISOString()
+        }
+        setDoc(carRef, carWithNewExpense)
+          .then(() => console.log('[store] Expense saved to Firestore'))
+          .catch((error) => console.error('[store] Failed to save expense:', error))
+      }
+    }
+  }, [userId, db, state.cars])
 
   const deleteExpense = useCallback((carId: string, expenseId: string) => {
     setState((prev) => ({
@@ -466,7 +482,23 @@ export function useAppStore(userId?: string | null) {
           : car
       ),
     }))
-  }, [])
+    
+    // Save to Firebase immediately
+    if (userId && db) {
+      const carRef = doc(db, 'users', userId, 'cars', carId)
+      const updatedCar = state.cars.find(car => car.id === carId)
+      if (updatedCar) {
+        const carWithoutExpense = {
+          ...updatedCar,
+          expenses: updatedCar.expenses.filter((e) => e.id !== expenseId),
+          lastModified: new Date().toISOString()
+        }
+        setDoc(carRef, carWithoutExpense)
+          .then(() => console.log('[store] Expense deleted from Firestore'))
+          .catch((error) => console.error('[store] Failed to delete expense:', error))
+      }
+    }
+  }, [userId, db, state.cars])
 
   const updateExpense = useCallback((carId: string, expenseId: string, updates: Partial<Expense>) => {
     setState((prev) => ({
@@ -482,7 +514,25 @@ export function useAppStore(userId?: string | null) {
           : car
       ),
     }))
-  }, [])
+    
+    // Save to Firebase immediately
+    if (userId && db) {
+      const carRef = doc(db, 'users', userId, 'cars', carId)
+      const updatedCar = state.cars.find(car => car.id === carId)
+      if (updatedCar) {
+        const carWithUpdatedExpense = {
+          ...updatedCar,
+          expenses: updatedCar.expenses.map((e) =>
+            e.id === expenseId ? { ...e, ...updates } : e
+          ),
+          lastModified: new Date().toISOString()
+        }
+        setDoc(carRef, carWithUpdatedExpense)
+          .then(() => console.log('[store] Expense updated in Firestore'))
+          .catch((error) => console.error('[store] Failed to update expense:', error))
+      }
+    }
+  }, [userId, db, state.cars])
 
   const sellCar = useCallback((carId: string, salePrice: number, saleDate?: string) => {
     setState((prev) => ({
