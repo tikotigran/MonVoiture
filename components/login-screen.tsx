@@ -33,16 +33,27 @@ export function LoginScreen({ onLogin, onRegister, error = '', isLoading = false
     setLocalError('')
 
     if (!email.trim()) {
-      setLocalError('Введите email')
+      setLocalError(t('error.emailRequired', language))
       return
     }
     if (!password) {
-      setLocalError(t('message.passwordRequired', language))
+      setLocalError(t('error.passwordRequired', language))
       return
     }
     if (password.length < 6) {
       setLocalError('Пароль должен содержать минимум 6 символов')
       return
+    }
+
+    if (mode === 'register') {
+      if (!firstName.trim()) {
+        setLocalError(t('error.firstNameRequired', language))
+        return
+      }
+      if (!garageName.trim()) {
+        setLocalError(t('error.garageNameRequired', language))
+        return
+      }
     }
 
     if (mode === 'login') {
@@ -62,18 +73,18 @@ export function LoginScreen({ onLogin, onRegister, error = '', isLoading = false
             {t('header.title', language)}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {mode === 'login' ? 'Войдите в аккаунт' : 'Создайте новый аккаунт'}
+            {mode === 'login' ? t('link.haveAccount', language) : t('link.noAccount', language)}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">
-              Email
+              {t('label.email', language)}
             </label>
             <Input
               type="email"
-              placeholder="you@example.com"
+              placeholder={t('placeholder.email', language)}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -83,11 +94,11 @@ export function LoginScreen({ onLogin, onRegister, error = '', isLoading = false
             <>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">
-                  Имя
+                  {t('label.firstName', language)}
                 </label>
                 <Input
                   type="text"
-                  placeholder="Введите имя"
+                  placeholder={t('placeholder.firstName', language)}
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                 />
@@ -95,11 +106,11 @@ export function LoginScreen({ onLogin, onRegister, error = '', isLoading = false
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">
-                  Фамилия
+                  {t('label.lastName', language)}
                 </label>
                 <Input
                   type="text"
-                  placeholder="Введите фамилию (необязательно)"
+                  placeholder={t('placeholder.lastName', language)}
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                 />
@@ -107,11 +118,11 @@ export function LoginScreen({ onLogin, onRegister, error = '', isLoading = false
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">
-                  Название гаража
+                  {t('label.garageName', language)}
                 </label>
                 <Input
                   type="text"
-                  placeholder="Мой гараж"
+                  placeholder={t('placeholder.garageName', language)}
                   value={garageName}
                   onChange={(e) => setGarageName(e.target.value)}
                 />
@@ -121,7 +132,7 @@ export function LoginScreen({ onLogin, onRegister, error = '', isLoading = false
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">
-              Пароль
+              {t('label.password', language)}
             </label>
             <div className="relative">
               <Input
@@ -159,10 +170,10 @@ export function LoginScreen({ onLogin, onRegister, error = '', isLoading = false
             {isLoading ? (
               <span className="flex items-center gap-2">
                 <Spinner className="w-4 h-4" />
-                {mode === 'login' ? t('button.checking', language) : t('button.settingUp', language)}
+                {mode === 'login' ? t('message.loading', language) : t('message.loading', language)}
               </span>
             ) : (
-              mode === 'login' ? t('button.enter', language) : t('button.setPassword', language)
+              mode === 'login' ? t('button.login', language) : t('button.register', language)
             )}
           </Button>
         </form>
@@ -174,7 +185,7 @@ export function LoginScreen({ onLogin, onRegister, error = '', isLoading = false
               className="underline underline-offset-2"
               onClick={() => setMode('register')}
             >
-              Нет аккаунта? Зарегистрироваться
+              {t('link.noAccount', language)}
             </button>
           ) : (
             <button
@@ -182,7 +193,7 @@ export function LoginScreen({ onLogin, onRegister, error = '', isLoading = false
               className="underline underline-offset-2"
               onClick={() => setMode('login')}
             >
-              Уже есть аккаунт? Войти
+              {t('link.haveAccount', language)}
             </button>
           )}
         </div>
