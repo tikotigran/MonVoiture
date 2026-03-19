@@ -14,7 +14,7 @@ interface UseAuthResult {
   user: User | null
   loading: boolean
   error: string | null
-  register: (email: string, password: string) => Promise<void>
+  register: (email: string, password: string, firstName: string, lastName: string, garageName: string) => Promise<void>
   login: (email: string, password: string) => Promise<void>
   logout: () => Promise<void>
 }
@@ -32,11 +32,23 @@ export function useAuth(): UseAuthResult {
     return () => unsub()
   }, [])
 
-  const register = useCallback(async (email: string, password: string) => {
+  const register = useCallback(async (email: string, password: string, firstName: string, lastName: string, garageName: string) => {
     setError(null)
     setLoading(true)
     try {
-      await createUserWithEmailAndPassword(auth, email, password)
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      const user = userCredential.user
+      
+      // Save additional user info to user profile
+      if (user) {
+        await user.updateProfile({
+          displayName: `${firstName} ${lastName}`.trim() || firstName
+        })
+        
+        // Save user metadata to Firestore
+        // TODO: Save firstName, lastName, garageName to user profile
+        console.log('User registered:', { firstName, lastName, garageName })
+      }
     } catch (e: any) {
       setError(e?.message || 'Ошибка регистрации')
     } finally {

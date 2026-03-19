@@ -10,7 +10,6 @@ const defaultState: AppState = {
   cars: [],
   documents: [],
   settings: {
-    partners: [{ id: 'me', name: 'Я' }],
     currency: '€',
     language: 'ru',
     theme: 'system',
@@ -38,7 +37,6 @@ const loadStateFromFirestore = async (userId: string): Promise<AppState | null> 
     // Load settings from individual documents like cars and documents
     console.log('[store] Loading settings from Firebase...')
     const settingsPromises = [
-      getDoc(doc(db, 'users', userId, 'settings', 'partners')),
       getDoc(doc(db, 'users', userId, 'settings', 'currency')),
       getDoc(doc(db, 'users', userId, 'settings', 'language')),
       getDoc(doc(db, 'users', userId, 'settings', 'theme')),
@@ -50,15 +48,13 @@ const loadStateFromFirestore = async (userId: string): Promise<AppState | null> 
     let settings = defaultState.settings
     
     // Extract settings from individual documents
-    const partnersSnap = settingsSnapshots[0]
-    const currencySnap = settingsSnapshots[1]
-    const languageSnap = settingsSnapshots[2]
-    const themeSnap = settingsSnapshots[3]
-    const appNameSnap = settingsSnapshots[4]
-    const featuresSnap = settingsSnapshots[5]
+    const currencySnap = settingsSnapshots[0]
+    const languageSnap = settingsSnapshots[1]
+    const themeSnap = settingsSnapshots[2]
+    const appNameSnap = settingsSnapshots[3]
+    const featuresSnap = settingsSnapshots[4]
     
     console.log('[store] Settings snapshots:', {
-      partners: partnersSnap.exists(),
       currency: currencySnap.exists(),
       language: languageSnap.exists(),
       theme: themeSnap.exists(),
@@ -66,6 +62,22 @@ const loadStateFromFirestore = async (userId: string): Promise<AppState | null> 
       features: featuresSnap.exists()
     })
     
+    if (currencySnap.exists()) {
+      settings.currency = currencySnap.data().value
+    }
+    if (languageSnap.exists()) {
+      settings.language = languageSnap.data().value
+    }
+    if (themeSnap.exists()) {
+      settings.theme = themeSnap.data().value
+    }
+    if (appNameSnap.exists()) {
+      settings.appName = appNameSnap.data().value
+    }
+    if (featuresSnap.exists()) {
+      settings.features = featuresSnap.data().items
+    }
+
     // Also check if old settings exist and migrate them
     const oldSettingsRef = doc(db, 'users', userId, 'settings', 'main')
     const oldSettingsSnap = await getDoc(oldSettingsRef)
@@ -78,13 +90,6 @@ const loadStateFromFirestore = async (userId: string): Promise<AppState | null> 
       const migrationPromises = []
       
       // Migrate each setting to new structure
-      if (oldData.partners) {
-        migrationPromises.push(
-          setDoc(doc(db, 'users', userId, 'settings', 'partners'), { 
-            items: oldData.partners 
-          })
-        )
-      }
       if (oldData.currency) {
         migrationPromises.push(
           setDoc(doc(db, 'users', userId, 'settings', 'currency'), { 
@@ -133,11 +138,6 @@ const loadStateFromFirestore = async (userId: string): Promise<AppState | null> 
       const initialSettings = defaultState.settings
       const initialPromises = []
       
-      initialPromises.push(
-        setDoc(doc(db, 'users', userId, 'settings', 'partners'), { 
-          items: initialSettings.partners 
-        })
-      )
       initialPromises.push(
         setDoc(doc(db, 'users', userId, 'settings', 'currency'), { 
           value: initialSettings.currency 
@@ -242,9 +242,6 @@ async function saveCarsToNewStructure(userId: string, cars: Car[]) {
       if (carData.saleDate === undefined) {
         delete carData.saleDate
       }
-      if (carData.partnerShares === undefined) {
-        delete carData.partnerShares
-      }
       if (carData.deleted === undefined) {
         delete carData.deleted
       }
@@ -267,7 +264,6 @@ async function saveStateToNewStructure(userId: string, state: AppState) {
     
     // Save settings
     const cleanSettings = {
-      partners: state.settings.partners,
       currency: state.settings.currency,
       language: state.settings.language,
       theme: state.settings.theme,
@@ -293,7 +289,6 @@ async function saveStateToFirestore(userId: string, state: AppState) {
     
     // Save settings
     const cleanSettings = {
-      partners: state.settings.partners,
       currency: state.settings.currency,
       language: state.settings.language,
       theme: state.settings.theme,
@@ -319,9 +314,6 @@ async function saveStateToFirestore(userId: string, state: AppState) {
       }
       if (carData.saleDate === undefined) {
         delete carData.saleDate
-      }
-      if (carData.partnerShares === undefined) {
-        delete carData.partnerShares
       }
       if (carData.deleted === undefined) {
         delete carData.deleted
@@ -383,11 +375,6 @@ export function useAppStore(userId?: string | null) {
     const settingsPromises = []
     
     // Save each setting as a separate document
-    settingsPromises.push(
-      setDoc(doc(db, 'users', userId, 'settings', 'partners'), { 
-        items: settingsData.partners 
-      })
-    )
     settingsPromises.push(
       setDoc(doc(db, 'users', userId, 'settings', 'currency'), { 
         value: settingsData.currency 
@@ -664,86 +651,6 @@ export function useAppStore(userId?: string | null) {
     }))
   }, [])
 
-  const addPartner = useCallback((name: string) => {
-    const newPartner: Partner = { id: generateId(), name }
-    setState((prev) => ({
-      ...prev,
-      settings: {
-        ...prev.settings,
-        partners: [...prev.settings.partners, newPartner],
-      },
-    }))
-    
-    // Save to Firebase immediately
-    if (userId && db) {
-      // Save each setting as individual document
-      const settingsPromises = [
-        setDoc(doc(db, 'users', userId, 'settings', 'partners'), 
-          { partners: [...state.settings.partners, newPartner] }),
-        setDoc(doc(db, 'users', userId, 'settings', 'currency'), 
-          { currency: state.settings.currency }),
-        setDoc(doc(db, 'users', userId, 'settings', 'language'), 
-          { language: state.settings.language }),
-        setDoc(doc(db, 'users', userId, 'settings', 'theme'), 
-          { theme: state.settings.theme }),
-        setDoc(doc(db, 'users', userId, 'settings', 'appName'), 
-          { appName: state.settings.appName }),
-        setDoc(doc(db, 'users', userId, 'settings', 'features'), 
-          { features: state.settings.features }),
-      ]
-      
-      Promise.all(settingsPromises)
-        .then(() => console.log('[store] Partner saved to Firestore as individual documents'))
-        .catch((error) => console.error('[store] Failed to save partner:', error))
-    }
-  }, [userId, db, state.settings])
-
-  const updatePartner = useCallback((partnerId: string, name: string) => {
-    setState((prev) => ({
-      ...prev,
-      settings: {
-        ...prev.settings,
-        partners: prev.settings.partners.map((partner) =>
-          partner.id === partnerId ? { ...partner, name } : partner
-        ),
-      },
-    }))
-  }, [])
-
-  const deletePartner = useCallback((partnerId: string) => {
-    if (partnerId === 'me') return
-    setState((prev) => ({
-      ...prev,
-      settings: {
-        ...prev.settings,
-        partners: prev.settings.partners.filter((p) => p.id !== partnerId),
-      },
-    }))
-    
-    // Save to Firebase immediately
-    if (userId && db) {
-      // Save each setting as individual document
-      const settingsPromises = [
-        setDoc(doc(db, 'users', userId, 'settings', 'partners'), 
-          { partners: state.settings.partners.filter((p) => p.id !== partnerId) }),
-        setDoc(doc(db, 'users', userId, 'settings', 'currency'), 
-          { currency: state.settings.currency }),
-        setDoc(doc(db, 'users', userId, 'settings', 'language'), 
-          { language: state.settings.language }),
-        setDoc(doc(db, 'users', userId, 'settings', 'theme'), 
-          { theme: state.settings.theme }),
-        setDoc(doc(db, 'users', userId, 'settings', 'appName'), 
-          { appName: state.settings.appName }),
-        setDoc(doc(db, 'users', userId, 'settings', 'features'), 
-          { features: state.settings.features }),
-      ]
-      
-      Promise.all(settingsPromises)
-        .then(() => console.log('[store] Partner deleted from Firestore as individual documents'))
-        .catch((error) => console.error('[store] Failed to delete partner:', error))
-    }
-  }, [userId, db, state.settings])
-
   const updateCurrency = useCallback((currency: string) => {
     setState((prev) => ({
       ...prev,
@@ -938,8 +845,6 @@ export function useAppStore(userId?: string | null) {
       console.log('[store] Auto-saving settings to Firestore as individual documents')
       
       const settingsPromises = [
-        setDoc(doc(db, 'users', userId, 'settings', 'partners'), 
-          { partners: state.settings.partners }),
         setDoc(doc(db, 'users', userId, 'settings', 'currency'), 
           { currency: state.settings.currency }),
         setDoc(doc(db, 'users', userId, 'settings', 'language'), 
@@ -970,9 +875,6 @@ export function useAppStore(userId?: string | null) {
     sellCar,
     updateSoldCar,
     returnToSale,
-    addPartner,
-    deletePartner,
-    updatePartner,
     updateCurrency,
     updateLanguage,
     updateFeatures,
