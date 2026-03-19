@@ -3,7 +3,7 @@ import type { ClassValue, clsx } from 'clsx'
 
 export type Theme = 'dark' | 'light' | 'system'
 
-export interface Theme {
+export interface ThemeConfig {
   name: string
   colors: {
     background: string
@@ -18,7 +18,7 @@ export interface Theme {
   }
 }
 
-export const themes: Record<Theme, Theme> = {
+export const themes: Record<Theme, ThemeConfig> = {
   light: {
     name: 'light',
     colors: {

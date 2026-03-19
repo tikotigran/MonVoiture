@@ -40,7 +40,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import type { Car, Partner, Expense, Document } from '@/lib/types'
-import { categoryLabels } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { t } from '@/lib/translations'
 import { AddExpenseForm } from './add-expense-form'
@@ -50,29 +49,27 @@ import type { ChecklistItem } from '@/lib/types'
 
 interface CarDetailsProps {
   car: Car
-  partners: Partner[]
   currency: string
-  language?: 'ru' | 'fr' | 'hy' | 'en'
+  language: 'ru' | 'fr' | 'hy' | 'en'
   documents: Document[]
-  showDocuments?: boolean
-  showKm?: boolean
-  showYear?: boolean
+  showDocuments: boolean
+  showKm: boolean
+  showYear: boolean
   onBack: () => void
-  onAddExpense: (expense: Parameters<typeof import('./add-expense-form').AddExpenseForm>[0]['onAdd'] extends (e: infer E) => void ? E : never) => void
-  onUpdateExpense?: (expenseId: string, updates: Partial<Expense>) => void
+  onAddExpense: (expense: Omit<Expense, 'id'>) => void
+  onUpdateExpense: (expenseId: string, updates: Partial<Expense>) => void
   onDeleteExpense: (expenseId: string) => void
-  onSell: (salePrice: number, saleDate?: string) => void
-  onUpdateSoldCar?: (salePrice: number, saleDate: string) => void
-  onReturnToSale?: () => void
-  onAddDocument?: (document: Omit<Document, 'id' | 'uploadDate'>) => void
-  onDeleteDocument?: (documentId: string) => void
+  onSell: (price: number, saleDate: string) => void
+  onUpdateSoldCar: (price: number, saleDate: string) => void
+  onReturnToSale: () => void
+  onAddDocument: (document: Omit<Document, 'id' | 'uploadDate'>) => void
+  onDeleteDocument: (documentId: string) => void
   onDelete: () => void
-  onUpdateChecklist?: (checklist: ChecklistItem[]) => void
+  onUpdateChecklist: (checklist: ChecklistItem[]) => void
 }
 
 export function CarDetails({
   car,
-  partners,
   documents,
   showDocuments = true,
   showKm = true,
@@ -133,10 +130,6 @@ export function CarDetails({
   const profit = car.salePrice ? car.salePrice - totalInvested : 0
   const isProfitable = profit > 0
 
-  const getPartnerName = (id: string) => {
-    return partners.find((p) => p.id === id)?.name || 'Неизвестно'
-  }
-
   // Filter expenses based on selected tab
   const filteredExpenses = car.expenses
     .filter((expense) => {
@@ -144,40 +137,6 @@ export function CarDetails({
       return expense.paidBy === expenseFilter
     })
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-
-  // Get partners involved in this car (for partnership cars)
-  const involvedPartners = car.isPartnership && car.partnerShares
-    ? partners.filter((p) => car.partnerShares?.[p.id])
-    : partners.filter((p) => p.id === 'me')
-
-  const handleSell = () => {
-    if (!salePrice) return
-    onSell(parseFloat(salePrice), saleDate)
-    setSalePrice('')
-    setSaleDate(new Date().toISOString().split('T')[0])
-    setShowSellSheet(false)
-  }
-
-  const handleUpdateSoldCar = () => {
-    if (!salePrice || !onUpdateSoldCar) return
-    onUpdateSoldCar(parseFloat(salePrice), saleDate)
-    setSalePrice(car.salePrice?.toString() || '')
-    setShowSellSheet(false)
-  }
-
-  // Calculate partner profits
-  const getPartnerProfit = (partnerId: string) => {
-    if (!car.isPartnership || !car.partnerShares) return 0
-    const share = car.partnerShares[partnerId] || 0
-    return (profit * share) / 100
-  }
-
-  // Calculate what each partner actually spent (only expenses, not purchase price)
-  const getPartnerSpent = (partnerId: string) => {
-    return car.expenses
-      .filter((e) => e.paidBy === partnerId)
-      .reduce((sum, e) => sum + e.amount, 0)
-  }
 
   return (
     <div className="min-h-screen bg-background">
