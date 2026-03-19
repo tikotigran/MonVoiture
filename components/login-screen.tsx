@@ -10,7 +10,7 @@ import { t } from '@/lib/translations'
 
 interface LoginScreenProps {
   onLogin: (email: string, password: string) => void | Promise<void>
-  onRegister: (email: string, password: string) => void | Promise<void>
+  onRegister: (email: string, password: string, firstName: string, lastName: string, garageName: string) => void | Promise<void>
   error?: string
   isLoading?: boolean
 }
@@ -21,6 +21,11 @@ export function LoginScreen({ onLogin, onRegister, error = '', isLoading = false
   const [showPassword, setShowPassword] = useState(false)
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [localError, setLocalError] = useState('')
+  
+  // Registration fields
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [garageName, setGarageName] = useState('')
   const language = 'ru'
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,7 +48,7 @@ export function LoginScreen({ onLogin, onRegister, error = '', isLoading = false
     if (mode === 'login') {
       await onLogin(email.trim(), password)
     } else {
-      await onRegister(email.trim(), password)
+      await onRegister(email.trim(), password, firstName.trim(), lastName.trim(), garageName.trim())
     }
   }
 
@@ -73,6 +78,46 @@ export function LoginScreen({ onLogin, onRegister, error = '', isLoading = false
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
+
+          {mode === 'register' && (
+            <>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">
+                  Имя
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Введите имя"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">
+                  Фамилия
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Введите фамилию (необязательно)"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">
+                  Название гаража
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Мой гараж"
+                  value={garageName}
+                  onChange={(e) => setGarageName(e.target.value)}
+                />
+              </div>
+            </>
+          )}
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">

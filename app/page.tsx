@@ -39,9 +39,6 @@ export default function Home() {
     sellCar,
     updateSoldCar,
     returnToSale,
-    addPartner,
-    deletePartner,
-    updatePartner,
     updateCurrency,
     updateLanguage,
     updateFeatures,
@@ -138,9 +135,9 @@ export default function Home() {
     await login(email, password)
   }
 
-  const handleRegister = async (email: string, password: string) => {
+  const handleRegister = async (email: string, password: string, firstName: string, lastName: string, garageName: string) => {
     setLoginError('')
-    await register(email, password)
+    await register(email, password, firstName, lastName, garageName)
   }
 
   if (!user && !authLoading) {
@@ -167,7 +164,6 @@ export default function Home() {
     return (
       <CarDetails
         car={selectedCar}
-        partners={state.settings.partners}
         currency={state.settings.currency}
         language={state.settings.language}
         documents={state.documents}
@@ -328,9 +324,7 @@ export default function Home() {
       <AddCarForm
         open={showAddCar}
         onOpenChange={setShowAddCar}
-        partners={state.settings.partners}
         onAdd={addCar}
-        onAddPartner={addPartner}
         language={state.settings.language}
         features={state.settings.features || { sorting: true, purchaseDate: true, licensePlate: true, km: true, year: true }}
       />
@@ -340,9 +334,7 @@ export default function Home() {
         open={showEditCar}
         onOpenChange={setShowEditCar}
         car={editingCar}
-        partners={state.settings.partners}
         onUpdate={updateCar}
-        onAddPartner={addPartner}
         language={state.settings.language}
         features={state.settings.features || { sorting: true, purchaseDate: true, licensePlate: true, km: true, year: true }}
       />
@@ -352,21 +344,16 @@ export default function Home() {
         open={showSettings}
         onOpenChange={setShowSettings}
         user={user}
-        partners={state.settings.partners}
         currency={state.settings.currency}
         language={state.settings.language}
         appName={state.settings.appName}
         theme={state.settings.theme}
         features={state.settings.features || { sorting: true, purchaseDate: true, licensePlate: true, km: true, year: true }}
-        onAddPartner={addPartner}
-        onDeletePartner={deletePartner}
-        onUpdatePartner={updatePartner}
         onUpdateCurrency={updateCurrency}
         onUpdateFeatures={updateFeatures}
         onUpdateLanguage={updateLanguage}
         onUpdateAppName={updateAppName}
         onUpdateTheme={updateTheme}
-        onResetGarage={resetGarage}
       />
     </div>
   )

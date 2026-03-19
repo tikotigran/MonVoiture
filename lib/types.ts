@@ -52,8 +52,13 @@ export interface Car {
   checklist?: ChecklistItem[] // чек-лист запчастей и работ
 }
 
+export interface UserInfo {
+  firstName: string
+  lastName: string
+  garageName: string
+}
+
 export interface AppSettings {
-  partners: Partner[]
   currency: string
   language: 'ru' | 'fr' | 'hy' | 'en'
   theme: 'light' | 'dark' | 'system'
@@ -71,6 +76,7 @@ export interface AppSettings {
   reminders?: any
   notifications?: any
   userRole?: string
+  userInfo?: UserInfo
 }
 
 export interface AppState {
