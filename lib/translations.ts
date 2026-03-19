@@ -9,7 +9,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'tabs.active': 'Активные',
     'tabs.sold': 'Продано',
     'tab.all': 'Все',
-    'tab.active': 'В Ремонте',
+    'tab.active': 'В ремонте',
     'tab.sold': 'Проданные',
 
     // Stats
@@ -18,10 +18,31 @@ export const translations: Record<Language, Record<string, string>> = {
     'stats.carsActive': 'авто в ремонте',
     'stats.carsSold': 'авто продано',
     'message.carAdded': 'Машина успешно добавлена',
-    'message.partnerAdded': 'Партнер успешно добавлен',
     'message.loading': 'Загрузка...',
     'message.cannotAddCar': 'Объясните почему не получается добавить машину',
     'error.carNameRequired': 'Название машины обязательно',
+    'error.emailRequired': 'Email обязателен',
+    'error.passwordRequired': 'Пароль обязателен',
+    'error.firstNameRequired': 'Имя обязательно',
+    'error.garageNameRequired': 'Название гаража обязательно',
+
+    // Registration
+    'label.firstName': 'Имя',
+    'label.lastName': 'Фамилия',
+    'label.garageName': 'Название гаража',
+    'label.email': 'Email',
+    'label.password': 'Пароль',
+    'label.confirmPassword': 'Подтвердите пароль',
+    'placeholder.firstName': 'Введите ваше имя',
+    'placeholder.lastName': 'Введите вашу фамилию (опционально)',
+    'placeholder.garageName': 'Введите название гаража',
+    'placeholder.email': 'example@email.com',
+    'placeholder.password': 'Введите пароль',
+    'placeholder.confirmPassword': 'Подтвердите пароль',
+    'button.register': 'Зарегистрироваться',
+    'button.login': 'Войти',
+    'link.haveAccount': 'Уже есть аккаунт?',
+    'link.noAccount': 'Нет аккаунта?',
 
     // Buttons
     'button.enter': 'Войти',
@@ -41,7 +62,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'button.showAll': 'Показать все',
     'button.settings': 'Настройки',
     'button.logout': 'Выход',
-    'button.addPartner': 'Добавить партнера',
+    'button.confirmSale': 'Подтвердить продажу',
 
     // Labels
     'label.name': 'Название',
@@ -58,24 +79,18 @@ export const translations: Record<Language, Record<string, string>> = {
     'label.category': 'Категория',
     'label.date': 'Дата',
     'label.currency': 'Валюта',
-    'label.partners': 'Партнёры',
     'label.language': 'Язык',
     'label.profit': 'Прибыль',
     'label.expenses': 'Расходы',
     'label.total': 'Итого',
-    'label.partnerSummary': 'Смета по партнёрам',
-    'label.share': 'Доля',
-    'label.profitShare': 'Доля прибыли',
-    'label.lossShare': 'Доля убытка',
-    'label.toReceive': 'К получению',
     'label.sold': 'Продано',
     'label.notes': 'Заметки',
     'label.checklist': 'Чек-лист',
+    'label.me': 'Я',
 
     // Status
-    'status.active': 'В Ремонте',
+    'status.active': 'В ремонте',
     'status.sold': 'Продано',
-    'status.partnership': 'Партнерство',
 
     // Messages
     'message.noCars': 'Нет машин',
@@ -89,11 +104,6 @@ export const translations: Record<Language, Record<string, string>> = {
     'category.repair': 'Ремонт',
     'category.documents': 'Оформление',
     'category.other': 'Другое',
-
-    // Notifications
-    'notification.insuranceReminder': 'Напоминание о страховке',
-    'notification.technicalReminder': 'Напоминание о ТО',
-    'notification.taxReminder': 'Напоминание о налогах',
 
     // Help
     'help.checklistExamples': 'Добавьте запчасти (тормозные колодки, фильтр масла) или работы (покраска, шиномонтаж)',
@@ -115,19 +125,13 @@ export const translations: Record<Language, Record<string, string>> = {
     'button.dashboard': 'Дашборд',
     'button.cars': 'Машины',
     'button.saveChanges': 'Сохранить изменения',
-    'button.confirmSale': 'Подтвердить продажу',
-
-    // Descriptions
-    'description.shareExpenses': 'Разделить расходы и прибыль',
 
     // Labels
-    'label.partnerShares': 'Доли партнёров (%)',
     'label.whatDidYouBuy': 'Что купили?',
     'label.paidBy': 'Кто оплатил',
     'label.documentType': 'Тип документа',
     'label.documentName': 'Название (опционально)',
     'label.documents': 'Документы',
-    'label.filterByPartner': 'Фильтр по партнёру',
 
     // Documents
     'document.sts': 'СТС',
@@ -141,7 +145,6 @@ export const translations: Record<Language, Record<string, string>> = {
     'placeholder.expenseDescription': 'Описание расхода',
     'placeholder.documentName': 'Оставьте пустым для имени файла',
     'placeholder.selectType': 'Выберите тип',
-    'placeholder.partnerName': 'Имя партнёра',
     'placeholder.searchCars': 'Поиск машин...',
     'placeholder.notes': 'Введите заметки о машине...',
     'placeholder.expenseExample': 'Напр: Замена масла',
@@ -206,16 +209,11 @@ export const translations: Record<Language, Record<string, string>> = {
     'dashboard.avgProfit': 'Средняя прибыль',
 
     // Settings
-    'settings.notifications': 'Уведомления',
-    'settings.camera': 'Камера',
-    'settings.templates': 'Шаблоны',
-    'settings.teams': 'Команды',
-    'settings.roles': 'Роли',
     'settings.features': 'Функции',
     'settings.appearance': 'Внешний вид',
     'settings.language': 'Язык и валюта',
     'settings.sorting': 'Сортировка списка',
-    'settings.sortingDesc': 'Сортировка машин по дате и названию',
+    'settings.sortingDesc': 'сортировка машин по дате и названию',
     'settings.purchaseDate': 'Дата покупки',
     'settings.purchaseDateDesc': 'Показывать дату в карточках машин',
     'settings.licensePlate': 'Номерные знаки',
@@ -244,7 +242,6 @@ export const translations: Record<Language, Record<string, string>> = {
     'settings.resetPassword': 'Пароль',
     'settings.resetPasswordPlaceholder': 'Введите пароль',
     'settings.resetPasswordError': 'Неверный пароль',
-    'label.me': 'Я',
   },
   en: {
     'header.title': 'Car Accounting',
@@ -313,7 +310,31 @@ export const translations: Record<Language, Record<string, string>> = {
     'message.carNotSold': 'Car not sold yet. Profit information will appear after sale.',
     'message.cannotAddCar': 'Explain why you cannot add car',
     'error.carNameRequired': 'Car name is required',
-    'category.parts': 'Parts',
+    'error.emailRequired': 'Email is required',
+    'error.passwordRequired': 'Password is required',
+    'error.firstNameRequired': 'First name is required',
+    'error.garageNameRequired': 'Garage name is required',
+
+    // Registration
+    'label.firstName': 'First Name',
+    'label.lastName': 'Last Name',
+    'label.garageName': 'Garage Name',
+    'label.email': 'Email',
+    'label.password': 'Password',
+    'label.confirmPassword': 'Confirm Password',
+    'placeholder.firstName': 'Enter your first name',
+    'placeholder.lastName': 'Enter your last name (optional)',
+    'placeholder.garageName': 'Enter garage name',
+    'placeholder.email': 'example@email.com',
+    'placeholder.password': 'Enter password',
+    'placeholder.confirmPassword': 'Confirm password',
+    'button.register': 'Register',
+    'button.login': 'Login',
+    'link.haveAccount': 'Already have an account?',
+    'link.noAccount': "Don't have an account?",
+
+    // Buttons
+    'button.enter': 'Login',
     'category.repair': 'Repair',
     'category.documents': 'Documents',
     'category.other': 'Other',
