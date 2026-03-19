@@ -39,7 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import type { Car, Partner, Expense, Document } from '@/lib/types'
+import type { Car, Expense, Document } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { t } from '@/lib/translations'
 import { AddExpenseForm } from './add-expense-form'
@@ -132,10 +132,6 @@ export function CarDetails({
 
   // Filter expenses based on selected tab
   const filteredExpenses = car.expenses
-    .filter((expense) => {
-      if (expenseFilter === 'all') return true
-      return expense.paidBy === expenseFilter
-    })
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
   return (
@@ -275,24 +271,16 @@ export function CarDetails({
               </div>
 
               {/* Filter tabs */}
-              {car.isPartnership && involvedPartners.length > 1 && (
-                <Tabs value={expenseFilter} onValueChange={setExpenseFilter}>
+              <Tabs value={expenseFilter} onValueChange={setExpenseFilter}>
                   <TabsList className="w-full">
                     <TabsTrigger value="all" className="flex-1">
                       {t('tab.all', language)}
                     </TabsTrigger>
-                    {involvedPartners.map((partner) => (
-                      <TabsTrigger key={partner.id} value={partner.id} className="flex-1">
-                        {partner.name}
-                      </TabsTrigger>
-                    ))}
                   </TabsList>
                 </Tabs>
-              )}
-
               {filteredExpenses.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-6">
-                  {expenseFilter === 'all' ? t('message.noExpenses', language) : t('message.noExpensesForPartner', language)}
+                  {t('message.noExpenses', language)}
                 </p>
               ) : (
                 <div className="space-y-2">
@@ -302,16 +290,10 @@ export function CarDetails({
                         <div
                           className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg cursor-pointer active:bg-secondary/50 transition-colors"
                         >
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-sm truncate text-foreground">{expense.description}</span>
-                              <span className="text-xs text-muted-foreground/60">•</span>
-                              <span className="text-xs text-muted-foreground">{formatDate(expense.date)}</span>
-                              {car.isPartnership && expense.paidBy && (
-                                <Badge variant="outline" className="text-xs shrink-0">
-                                  {getPartnerName(expense.paidBy)}
-                                </Badge>
-                              )}
+                          <div className="flex-1">
+                            <div className="font-medium">{expense.description}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {formatCurrency(expense.amount, currency)} • {formatDate(expense.date)}
                             </div>
                           </div>
                           <div className="flex items-center gap-2 ml-4">
@@ -416,69 +398,6 @@ export function CarDetails({
                       </span>
                     </div>
                   </div>
-
-                  {/* Partnership profit breakdown */}
-                  {car.isPartnership && car.partnerShares && (
-                    <div className="pt-4 border-t border-border space-y-4">
-                      <div className="space-y-3">
-                        <p className="text-sm font-medium">{t('label.partnerSummary', language)}</p>
-                        {partners
-                          .filter((p) => car.partnerShares?.[p.id])
-                          .map((partner) => {
-                            const partnerShare = car.partnerShares?.[partner.id] || 0
-                            const partnerProfit = getPartnerProfit(partner.id)
-                            const partnerSpent = getPartnerSpent(partner.id)
-                            const partnerTotal = partnerSpent + partnerProfit
-
-                            return (
-                              <div
-                                key={partner.id}
-                                className="space-y-2 p-3 bg-secondary/30 rounded-lg"
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <p className="font-medium">{partner.name}</p>
-                                    <p className="text-xs text-muted-foreground">{t('label.share', language)}: {partnerShare}%</p>
-                                  </div>
-                                </div>
-
-                                {/* Detailed breakdown for this partner */}
-                                <div className="ml-0 pt-2 border-t border-border/50 space-y-1 text-xs">
-                                  <div className="flex justify-between font-medium">
-                                    <span>{t('label.expenses', language)}</span>
-                                    <span>{formatCurrency(partnerSpent, currency)}</span>
-                                  </div>
-                                  <div
-                                    className={`flex justify-between font-bold pt-1 ${partnerProfit >= 0 ? 'text-primary' : 'text-destructive'
-                                      }`}
-                                  >
-                                    <span>{partnerProfit >= 0 ? t('label.profitShare', language) : t('label.lossShare', language)}</span>
-                                    <span>
-                                      {partnerProfit >= 0 ? '+' : ''}
-                                      {formatCurrency(partnerProfit, currency)}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {/* Final total */}
-                                <div
-                                  className={`flex justify-between font-bold text-sm p-2 -mx-3 -mb-3 rounded-b-lg ${partnerTotal >= 0
-                                    ? 'bg-primary/20 text-primary'
-                                    : 'bg-destructive/20 text-destructive'
-                                    }`}
-                                >
-                                  <span>{t('label.toReceive', language)}</span>
-                                  <span>
-                                    {partnerTotal >= 0 ? '+' : ''}
-                                    {formatCurrency(partnerTotal, currency)}
-                                  </span>
-                                </div>
-                              </div>
-                            )
-                          })}
-                      </div>
-                    </div>
-                  )}
                 </>
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-6">
@@ -587,8 +506,6 @@ export function CarDetails({
       <AddExpenseForm
         open={showAddExpense}
         onOpenChange={setShowAddExpense}
-        partners={partners}
-        isPartnership={car.isPartnership}
         onAdd={onAddExpense}
         language={language}
       />
