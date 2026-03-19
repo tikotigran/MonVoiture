@@ -676,17 +676,24 @@ export function useAppStore(userId?: string | null) {
     
     // Save to Firebase immediately
     if (userId && db) {
-      const settingsRef = doc(db, 'users', userId, 'settings', 'main')
-      const cleanSettings = {
-        partners: [...state.settings.partners, newPartner],
-        currency: state.settings.currency,
-        language: state.settings.language,
-        theme: state.settings.theme,
-        appName: state.settings.appName,
-        features: state.settings.features,
-      }
-      setDoc(settingsRef, cleanSettings, { merge: true })
-        .then(() => console.log('[store] Partner saved to Firestore'))
+      // Save each setting as individual document
+      const settingsPromises = [
+        setDoc(doc(db, 'users', userId, 'settings', 'partners'), 
+          { partners: [...state.settings.partners, newPartner] }),
+        setDoc(doc(db, 'users', userId, 'settings', 'currency'), 
+          { currency: state.settings.currency }),
+        setDoc(doc(db, 'users', userId, 'settings', 'language'), 
+          { language: state.settings.language }),
+        setDoc(doc(db, 'users', userId, 'settings', 'theme'), 
+          { theme: state.settings.theme }),
+        setDoc(doc(db, 'users', userId, 'settings', 'appName'), 
+          { appName: state.settings.appName }),
+        setDoc(doc(db, 'users', userId, 'settings', 'features'), 
+          { features: state.settings.features }),
+      ]
+      
+      Promise.all(settingsPromises)
+        .then(() => console.log('[store] Partner saved to Firestore as individual documents'))
         .catch((error) => console.error('[store] Failed to save partner:', error))
     }
   }, [userId, db, state.settings])
@@ -715,17 +722,24 @@ export function useAppStore(userId?: string | null) {
     
     // Save to Firebase immediately
     if (userId && db) {
-      const settingsRef = doc(db, 'users', userId, 'settings', 'main')
-      const cleanSettings = {
-        partners: state.settings.partners.filter((p) => p.id !== partnerId),
-        currency: state.settings.currency,
-        language: state.settings.language,
-        theme: state.settings.theme,
-        appName: state.settings.appName,
-        features: state.settings.features,
-      }
-      setDoc(settingsRef, cleanSettings, { merge: true })
-        .then(() => console.log('[store] Partner deleted from Firestore'))
+      // Save each setting as individual document
+      const settingsPromises = [
+        setDoc(doc(db, 'users', userId, 'settings', 'partners'), 
+          { partners: state.settings.partners.filter((p) => p.id !== partnerId) }),
+        setDoc(doc(db, 'users', userId, 'settings', 'currency'), 
+          { currency: state.settings.currency }),
+        setDoc(doc(db, 'users', userId, 'settings', 'language'), 
+          { language: state.settings.language }),
+        setDoc(doc(db, 'users', userId, 'settings', 'theme'), 
+          { theme: state.settings.theme }),
+        setDoc(doc(db, 'users', userId, 'settings', 'appName'), 
+          { appName: state.settings.appName }),
+        setDoc(doc(db, 'users', userId, 'settings', 'features'), 
+          { features: state.settings.features }),
+      ]
+      
+      Promise.all(settingsPromises)
+        .then(() => console.log('[store] Partner deleted from Firestore as individual documents'))
         .catch((error) => console.error('[store] Failed to delete partner:', error))
     }
   }, [userId, db, state.settings])
@@ -917,6 +931,32 @@ export function useAppStore(userId?: string | null) {
       },
     }))
   }, [])
+
+  // Auto-save settings to Firebase when they change
+  useEffect(() => {
+    if (userId && db && isLoaded) {
+      console.log('[store] Auto-saving settings to Firestore as individual documents')
+      
+      const settingsPromises = [
+        setDoc(doc(db, 'users', userId, 'settings', 'partners'), 
+          { partners: state.settings.partners }),
+        setDoc(doc(db, 'users', userId, 'settings', 'currency'), 
+          { currency: state.settings.currency }),
+        setDoc(doc(db, 'users', userId, 'settings', 'language'), 
+          { language: state.settings.language }),
+        setDoc(doc(db, 'users', userId, 'settings', 'theme'), 
+          { theme: state.settings.theme }),
+        setDoc(doc(db, 'users', userId, 'settings', 'appName'), 
+          { appName: state.settings.appName }),
+        setDoc(doc(db, 'users', userId, 'settings', 'features'), 
+          { features: state.settings.features }),
+      ]
+      
+      Promise.all(settingsPromises)
+        .then(() => console.log('[store] Settings auto-saved to Firestore'))
+        .catch((error) => console.error('[store] Failed to auto-save settings:', error))
+    }
+  }, [userId, db, isLoaded, state.settings])
 
   return {
     state,
