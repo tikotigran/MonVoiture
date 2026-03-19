@@ -876,6 +876,17 @@ export function useAppStore(userId?: string | null) {
     console.log('[store] Garage reset complete - cars deleted, documents preserved')
   }, [userId, state.settings, state.documents])
 
+  const updateTheme = useCallback((theme: 'light' | 'dark' | 'system') => {
+    console.log('[store] updateTheme called with:', theme)
+    setState((prev) => ({
+      ...prev,
+      settings: {
+        ...prev.settings,
+        theme,
+      },
+    }))
+  }, [])
+
   const updateAppName = useCallback((appName: string) => {
     console.log('[store] Updating app name to:', appName)
     setState(prev => ({
