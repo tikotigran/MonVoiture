@@ -5,7 +5,6 @@ import { Plus, Wallet, Calendar, Tag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   Dialog,
   DialogContent,
@@ -38,45 +37,19 @@ export function AddExpenseForm({
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState<Expense['category']>('parts')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [paidBy, setPaidBy] = useState<string>('me')
-
-  // Helper function to get partner options
-  const getPartnerOptions = () => {
-    const options = [
-      { value: 'me', label: userInfo?.firstName || t('label.me', language) }
-    ]
-    
-    if (car?.partnerNames) {
-      Object.entries(car.partnerNames).forEach(([partnerId, partnerName]) => {
-        // Skip 'me' to avoid duplicates
-        if (partnerId !== 'me' && partnerName) {
-          options.push({
-            value: partnerId,
-            label: partnerName
-          })
-        }
-      })
-    }
-    
-    // Remove duplicates based on value
-    const uniqueOptions = options.filter((option, index, self) =>
-      index === self.findIndex((opt) => opt.value === option.value)
-    )
-    
-    return uniqueOptions
-  }
+  const [paidBy, setPaidBy] = useState<string | null>(null)
 
   const resetForm = () => {
     setDescription('')
     setAmount('')
     setCategory('parts')
     setDate(new Date().toISOString().split('T')[0])
-    setPaidBy('me')
+    setPaidBy(null)
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!description.trim() || !amount) return
+    if (!description.trim() || !amount || !paidBy) return
 
     onAdd({
       description: description.trim(),
@@ -158,25 +131,36 @@ export function AddExpenseForm({
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="paidBy">{t('label.whoPaid', language)}</Label>
-            <Select value={paidBy} onValueChange={setPaidBy}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('placeholder.selectWhoPaid', language)} />
-              </SelectTrigger>
-              <SelectContent>
-                {getPartnerOptions().map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>{t('label.whoPaid', language)}</Label>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={paidBy === 'me' ? 'default' : 'outline'}
+                className="flex-1"
+                onClick={() => setPaidBy('me')}
+              >
+                {userInfo?.firstName || t('label.me', language)}
+              </Button>
+              {car?.partnerNames && Object.entries(car.partnerNames).map(([partnerId, partnerName]) => (
+                partnerId !== 'me' && partnerName && (
+                  <Button
+                    key={partnerId}
+                    type="button"
+                    variant={paidBy === partnerId ? 'default' : 'outline'}
+                    className="flex-1"
+                    onClick={() => setPaidBy(partnerId)}
+                  >
+                    {partnerName}
+                  </Button>
+                )
+              ))}
+            </div>
           </div>
 
           <Button
             type="submit"
             className="w-full"
-            disabled={!description.trim() || !amount}
+            disabled={!description.trim() || !amount || !paidBy}
           >
             {t('button.addExpense', language)}
           </Button>
