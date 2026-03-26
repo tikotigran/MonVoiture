@@ -86,13 +86,10 @@ function saveSettingsToLocalStorage(userId: string, settings: AppSettings) {
 const loadStateFromFirestore = async (userId: string): Promise<AppState | null> => {
   try {
     if (!db) {
-      console.log('[store] Firestore not initialized')
       return null
     }
-    console.log('[store] Starting loadStateFromFirestore for user:', userId)
     
     // Load settings from individual documents like cars and documents
-    console.log('[store] Loading settings from Firebase...')
     const settingsPromises = [
       getDoc(doc(db, 'users', userId, 'settings', 'currency')),
       getDoc(doc(db, 'users', userId, 'settings', 'language')),
@@ -110,14 +107,6 @@ const loadStateFromFirestore = async (userId: string): Promise<AppState | null> 
     const themeSnap = settingsSnapshots[2]
     const appNameSnap = settingsSnapshots[3]
     const featuresSnap = settingsSnapshots[4]
-    
-    console.log('[store] Settings snapshots:', {
-      currency: currencySnap.exists(),
-      language: languageSnap.exists(),
-      theme: themeSnap.exists(),
-      appName: appNameSnap.exists(),
-      features: featuresSnap.exists()
-    })
     
     const loadedSettings: Partial<AppSettings> = {}
     if (currencySnap.exists()) {
@@ -146,14 +135,10 @@ const loadStateFromFirestore = async (userId: string): Promise<AppState | null> 
     // Also check if old settings exist and migrate them
     const oldSettingsRef = doc(db, 'users', userId, 'settings', 'main')
     const oldSettingsSnap = await getDoc(oldSettingsRef)
-    console.log('[store] Old settings exist:', oldSettingsSnap.exists())
+    
     if (oldSettingsSnap.exists()) {
-      console.log('[store] Old settings data:', oldSettingsSnap.data())
-      console.log('[store] Migrating old settings to new structure...')
-      
       const oldData = oldSettingsSnap.data() as any
-      // Use legacy values as fallback for current app session,
-      // so we don't briefly revert to defaults before autosave.
+      // Use legacy values as fallback for current app session
       effectiveSettingsInput = {
         currency: loadedSettings.currency ?? oldData.currency,
         language: loadedSettings.language ?? oldData.language,
@@ -200,142 +185,84 @@ const loadStateFromFirestore = async (userId: string): Promise<AppState | null> 
         )
       }
       
-      await Promise.all(migrationPromises)
-      console.log('[store] Migration completed, deleting old settings...')
-      
-      // Delete old settings after migration
-      await deleteDoc(oldSettingsRef)
-      console.log('[store] Old settings deleted')
-    } else {
-      // Create initial settings only when nothing exists yet.
-      // If any settings document already exists, keep user settings intact.
-      const hasAnySettings =
-        currencySnap.exists() ||
-        languageSnap.exists() ||
-        themeSnap.exists() ||
-        appNameSnap.exists() ||
-        featuresSnap.exists()
-
-      if (!hasAnySettings) {
-        console.log('[store] No settings found, creating initial settings...')
-        const initialSettings = defaultState.settings
-        const initialPromises = []
-        
-        initialPromises.push(
-          setDoc(doc(db, 'users', userId, 'settings', 'currency'), { 
-            currency: initialSettings.currency 
-          })
-        )
-        initialPromises.push(
-          setDoc(doc(db, 'users', userId, 'settings', 'language'), { 
-            language: initialSettings.language 
-          })
-        )
-        initialPromises.push(
-          setDoc(doc(db, 'users', userId, 'settings', 'theme'), { 
-            theme: initialSettings.theme 
-          })
-        )
-        initialPromises.push(
-          setDoc(doc(db, 'users', userId, 'settings', 'appName'), { 
-            appName: initialSettings.appName 
-          })
-        )
-        initialPromises.push(
-          setDoc(doc(db, 'users', userId, 'settings', 'features'), { 
-            features: initialSettings.features 
-          })
-        )
-        
-        await Promise.all(initialPromises)
-        console.log('[store] Initial settings created')
-      } else {
-        console.log('[store] Existing settings found, skipping default settings creation')
+      if (migrationPromises.length > 0) {
+        await Promise.all(migrationPromises)
       }
     }
 
     const normalizedLoadedSettings = normalizeSettings(effectiveSettingsInput)
 
-    // Load user profile - используем collection чтобы избежать ошибки с нечетными сегментами
-    console.log('[store] Starting to load user profile for userId:', userId)
-    
+    // Load all data in parallel for maximum performance
+    // Prepare references
     const profileRef = doc(db, 'users', userId, 'profile', 'doc')
-    const profileSnap = await getDoc(profileRef)
-    let userInfo: UserInfo | undefined
-    
-    // Also try to load userInfo from settings (fallback)
     const settingsUserInfoRef = doc(db, 'users', userId, 'settings', 'userInfo')
-    const settingsUserInfoSnap = await getDoc(settingsUserInfoRef)
+    const documentsRef = collection(db, 'users', userId, 'documents')
+    const carsRef = collection(db, 'users', userId, 'cars')
     
-    console.log('[store] Profile doc exists:', profileSnap.exists())
-    console.log('[store] Settings userInfo doc exists:', settingsUserInfoSnap.exists())
+    // Execute all requests simultaneously
+    const [
+      profileSnap,
+      settingsUserInfoSnap,
+      documentsSnap,
+      carsSnap
+    ] = await Promise.all([
+      getDoc(profileRef),
+      getDoc(settingsUserInfoRef),
+      getDocs(documentsRef),
+      getDocs(carsRef)
+    ])
     
+    // Process profile
+    let userInfo: UserInfo | undefined
     if (settingsUserInfoSnap.exists()) {
       const profileData = settingsUserInfoSnap.data() as UserInfo
       userInfo = profileData
-      console.log('[store] Loaded user profile from settings:', userInfo)
     } else if (profileSnap.exists()) {
       const profileData = profileSnap.data() as UserInfo
       userInfo = profileData
-      console.log('[store] Loaded user profile from profile:', userInfo)
       
       // Автоматически копируем в settings/userInfo для будущих загрузок
       try {
         await setDoc(settingsUserInfoRef, profileData)
-        console.log('[store] Auto-copied profile to settings/userInfo')
       } catch (error) {
         console.error('[store] Failed to auto-copy profile to settings:', error)
       }
-    } else {
-      console.log('[store] No user profile found in profile or settings')
     }
 
-    // Load documents
-    const documentsRef = collection(db, 'users', userId, 'documents')
-    const documentsSnap = await getDocs(documentsRef)
+    // Process documents
     const documents: Document[] = []
     documentsSnap.forEach((doc) => {
       const documentData = doc.data() as Omit<Document, 'id'>
       documents.push({ ...documentData, id: doc.id })
     })
 
-    // Load cars and their expenses
-    const carsRef = collection(db, 'users', userId, 'cars')
-    const carsSnap = await getDocs(carsRef)
-    const cars: Car[] = []
-    
-    console.log(`[store] Found ${carsSnap.docs.length} cars in Firebase`)
-    
-    for (const carDoc of carsSnap.docs) {
+    // Process cars in parallel for expenses loading
+    const carPromises = carsSnap.docs.map(async (carDoc) => {
       const carData = carDoc.data() as Omit<Car, 'id'>
-      console.log(`[store] Car data for ${carDoc.id}:`, carData)
       
-      if (carData.deleted !== true) {
-        // Check if expenses are stored in car data or separate collection
-        let expenses: Expense[] = []
-        
-        if (carData.expenses && Array.isArray(carData.expenses)) {
-          // Expenses are stored as part of car data
-          expenses = carData.expenses
-          console.log(`[store] Found ${expenses.length} expenses in car data for ${carDoc.id}`)
-        } else {
-          // Load expenses from separate collection
-          const expensesRef = collection(db, 'users', userId, 'cars', carDoc.id, 'expenses')
-          const expensesSnap = await getDocs(expensesRef)
-          expensesSnap.forEach((expenseDoc) => {
-            const expenseData = expenseDoc.data() as Omit<Expense, 'id'>
-            expenses.push({ ...expenseData, id: expenseDoc.id })
-          })
-          console.log(`[store] Loaded ${expenses.length} expenses from separate collection for ${carDoc.id}`)
-        }
-        
-        // Check if checklist exists in car data
-        console.log(`[store] Checklist for car ${carDoc.id}:`, carData.checklist)
-        
-        cars.push({ ...carData, id: carDoc.id, expenses })
+      if (carData.deleted === true) return null
+      
+      // Check if expenses are stored in car data or separate collection
+      let expenses: Expense[] = []
+      
+      if (carData.expenses && Array.isArray(carData.expenses)) {
+        // Expenses are stored as part of car data
+        expenses = carData.expenses
+      } else {
+        // Load expenses from separate collection
+        const expensesRef = collection(db, 'users', userId, 'cars', carDoc.id, 'expenses')
+        const expensesSnap = await getDocs(expensesRef)
+        expensesSnap.forEach((expenseDoc) => {
+          const expenseData = expenseDoc.data() as Omit<Expense, 'id'>
+          expenses.push({ ...expenseData, id: expenseDoc.id })
+        })
       }
-    }
-    console.log(`[store] Loaded ${cars.length} cars with expenses from Firebase`)
+      
+      return { ...carData, id: carDoc.id, expenses }
+    })
+    
+    const carResults = await Promise.all(carPromises)
+    const cars = carResults.filter((car): car is Car => car !== null)
     
     return { cars, documents, settings: normalizedLoadedSettings, userInfo }
     
@@ -361,31 +288,40 @@ export function useAppStore(userId?: string | null) {
         return
       }
 
-      const localSettings = loadSettingsFromLocalStorage(userId)
-      if (localSettings) {
-        setState((prev) => ({ ...prev, settings: localSettings }))
-      }
+      try {
+        const localSettings = loadSettingsFromLocalStorage(userId)
+        if (localSettings) {
+          setState((prev) => ({ ...prev, settings: localSettings }))
+        }
 
-      const fromRemote = await loadStateFromFirestore(userId)
-      if (cancelled) return
+        const fromRemote = await loadStateFromFirestore(userId)
+        if (cancelled) return
 
-      if (fromRemote) {
-        const { cars, documents, settings, userInfo } = fromRemote
-        const mergedSettings = normalizeSettings({
-          ...settings,
-          ...(localSettings || {}),
-          features: {
-            ...settings.features,
-            ...(localSettings?.features || {}),
-          },
-          userInfo: userInfo, // ✅ Include userInfo in mergedSettings
-        })
-        setState({ cars, documents, settings: mergedSettings, userInfo })
-      } else {
-        setState({ ...defaultState, settings: localSettings || defaultState.settings, userInfo: undefined })
+        if (fromRemote) {
+          const { cars, documents, settings, userInfo } = fromRemote
+          const mergedSettings = normalizeSettings({
+            ...settings,
+            ...(localSettings || {}),
+            features: {
+              ...settings.features,
+              ...(localSettings?.features || {}),
+            },
+            userInfo: userInfo, // ✅ Include userInfo in mergedSettings
+          })
+          setState({ cars, documents, settings: mergedSettings, userInfo })
+        } else {
+          setState({ ...defaultState, settings: localSettings || defaultState.settings, userInfo: undefined })
+        }
+      } catch (error) {
+        console.error('[store] Error during initialization:', error)
+        setState(defaultState)
+      } finally {
+        // This ALWAYS runs: when data exists, when data is empty, or when error occurs
+        if (!cancelled) {
+          setIsLoaded(true)
+          setIsInitializing(false)
+        }
       }
-      setIsLoaded(true)
-      setIsInitializing(false)
     }
 
     init()

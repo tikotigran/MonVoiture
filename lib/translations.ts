@@ -6,8 +6,6 @@ export const translations: Record<Language, Record<string, string>> = {
     'header.title': 'Учет автомобилей',
 
     // Tabs
-    'tabs.active': 'Активные',
-    'tabs.sold': 'Продано',
     'tab.all': 'Все',
     'tab.active': 'В ремонте',
     'tab.sold': 'Проданные',
@@ -35,7 +33,6 @@ export const translations: Record<Language, Record<string, string>> = {
     'label.lastName': 'Фамилия',
     'label.email': 'Email',
     'label.garageName': 'Название гаража',
-    'label.email': 'Email',
     'label.password': 'Пароль',
     'label.confirmPassword': 'Подтвердите пароль',
     'placeholder.firstName': 'Введите ваше имя',
@@ -245,8 +242,6 @@ export const translations: Record<Language, Record<string, string>> = {
     'header.title': 'Car Accounting',
 
     // Tabs
-    'tabs.active': 'Active',
-    'tabs.sold': 'Sold',
     'tab.all': 'All',
     'tab.active': 'In Repair',
     'tab.sold': 'Sold',
@@ -258,6 +253,9 @@ export const translations: Record<Language, Record<string, string>> = {
     'stats.carsActive': 'cars in repair',
     'stats.carsSold': 'cars sold',
     'message.carAdded': 'Car successfully added',
+    'message.partnerAdded': 'Partner added',
+    'description.shareExpenses': 'Share expenses between partners',
+    'label.partnerShares': 'Partner shares',
     'message.loading': 'Loading...',
     'message.cannotAddCar': 'Explain why you cannot add car',
     'error.carNameRequired': 'Car name is required',
@@ -433,6 +431,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'dashboard.avgProfit': 'Average Profit',
 
     // Settings
+    'settings.title': 'Settings',
+    'settings.profile': 'Profile',
     'settings.features': 'Features',
     'settings.appearance': 'Appearance',
     'settings.language': 'Language & Currency',
@@ -450,6 +450,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'settings.kmDesc': 'Mileage field in kilometers',
     'settings.year': 'Year',
     'settings.yearDesc': 'Car year field',
+    'settings.dashboard': 'Dashboard',
+    'settings.dashboardDesc': 'Sales statistics and charts',
     'settings.theme': 'Theme',
     'settings.themeDesc': 'Choose app color theme',
     'settings.appName': 'App Name',
@@ -466,6 +468,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'settings.resetPassword': 'Password',
     'settings.resetPasswordPlaceholder': 'Enter password',
     'settings.resetPasswordError': 'Incorrect password',
+    'settings.appNameTitle': 'App Name',
+    'status.partnership': 'Partnership',
   },
 
   fr: {
@@ -473,8 +477,6 @@ export const translations: Record<Language, Record<string, string>> = {
     'header.title': 'Comptabilité Automobile',
 
     // Tabs
-    'tabs.active': 'Actif',
-    'tabs.sold': 'Vendu',
     'tab.all': 'Tous',
     'tab.active': 'En Réparation',
     'tab.sold': 'Vendus',
@@ -486,6 +488,9 @@ export const translations: Record<Language, Record<string, string>> = {
     'stats.carsActive': 'voitures en réparation',
     'stats.carsSold': 'voitures vendues',
     'message.carAdded': 'Voiture ajoutée avec succès',
+    'message.partnerAdded': 'Partenaire ajouté',
+    'description.shareExpenses': 'Partager les dépenses entre les partenaires',
+    'label.partnerShares': 'Parts des partenaires',
     'message.loading': 'Chargement...',
     'message.cannotAddCar': 'Expliquez pourquoi vous ne pouvez pas ajouter de voiture',
     'error.carNameRequired': 'Le nom de la voiture est requis',
@@ -661,6 +666,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'dashboard.avgProfit': 'Profit Moyen',
 
     // Settings
+    'settings.title': 'Paramètres',
+    'settings.profile': 'Profil',
     'settings.features': 'Fonctionnalités',
     'settings.appearance': 'Apparence',
     'settings.language': 'Langue et Devise',
@@ -678,6 +685,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'settings.kmDesc': 'Champ de kilométrage',
     'settings.year': 'Année',
     'settings.yearDesc': 'Champ d\'année de voiture',
+    'settings.dashboard': 'Tableau de Bord',
+    'settings.dashboardDesc': 'Statistiques et graphiques de ventes',
     'settings.theme': 'Thème',
     'settings.themeDesc': 'Choisir le thème de couleur de l\'application',
     'settings.appName': 'Nom de l\'Application',
@@ -694,6 +703,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'settings.resetPassword': 'Mot de passe',
     'settings.resetPasswordPlaceholder': 'Entrez le mot de passe',
     'settings.resetPasswordError': 'Mot de passe incorrect',
+    'settings.appNameTitle': 'Nom de l\'Application',
+    'status.partnership': 'Partenariat',
   },
 
   hy: {
@@ -701,24 +712,11 @@ export const translations: Record<Language, Record<string, string>> = {
     'header.title': 'Ավտոմոբիլային Հաշվառում',
 
     // Tabs
-    'tabs.active': 'Ակտիվ',
-    'tabs.sold': 'Վաճառված',
     'tab.all': 'Բոլորը',
     'tab.active': 'Վերանորոգման մեջ',
     'tab.sold': 'Վաճառվածներ',
     'tab.expenses': 'Ծախսեր',
 
-    // Stats
-    'stats.invested': 'Ներդրված',
-    'stats.total': 'Ընդհանուր',
-    'stats.carsActive': 'ավտոմոբիլ վերանորոգման մեջ',
-    'stats.carsSold': 'ավտոմոբիլ վաճառված',
-    'message.carAdded': 'Ավտոմոբիլը հաջողությամբ ավելացվեց',
-    'message.loading': 'Բեռնում...',
-    'message.cannotAddCar': 'Բացատրեք թե ինչու չի ստացվում ավելացնել ավտոմոբիլ',
-    'error.carNameRequired': 'Ավտոմոբիլի անունը պարտադիր է',
-    'error.emailRequired': 'Email-ը պարտադիր է',
-    'error.passwordRequired': 'Գաղտնաբառը պարտադիր է',
     'error.firstNameRequired': 'Անունը պարտադիր է',
     'error.garageNameRequired': 'Ավտոտնակայանի անունը պարտադիր է',
 
@@ -765,7 +763,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'label.carName': 'Ավտոմոբիլի Անուն',
     'label.licensePlate': 'Համարանիշ',
     'label.year': 'Տարեթիվ',
-    'label.km': 'Փոխանցորդման (կմ)',
+    'label.km': 'Վազք (կմ)',
     'label.purchasePrice': 'Գնման Գին',
     'label.purchaseDate': 'Գնման Ամսաթիվ',
     'label.salePrice': 'Վաճառքի Գին',
@@ -877,11 +875,11 @@ export const translations: Record<Language, Record<string, string>> = {
     'dashboard.totalCars': 'Ընդհանուր Ավտոմոբիլներ',
     'dashboard.activeCars': 'Ակտիվ',
     'dashboard.soldCars': 'Վաճառված',
-    'dashboard.profitableCars': 'Շահող',
+    'dashboard.profitableCars': 'Շահութաբեր',
     'dashboard.totalInvested': 'Ընդհանուր Ներդրված',
     'dashboard.totalRevenue': 'Ընդհանուր Եկամուտ',
     'dashboard.totalProfit': 'Ընդհանուր Շահույթ',
-    'dashboard.avgPaybackPeriod': 'Միջին Օգտագործման Ժամանակ',
+    'dashboard.avgPaybackPeriod': 'Հետգնման միջին ժամանակաշրջան',
     'dashboard.days': 'օր',
     'dashboard.thisMonth': 'Այս Ամիս',
     'dashboard.carsSoldThisMonth': 'Այս Ամիս Վաճառված Ավտոմոբիլներ',
@@ -889,6 +887,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'dashboard.avgProfit': 'Միջին Շահույթ',
 
     // Settings
+    'settings.title': 'Կարգավորումներ',
+    'settings.profile': 'Պրոֆիլ',
     'settings.features': 'Հնարավորություններ',
     'settings.appearance': 'Արտաքին Տեսք',
     'settings.language': 'Լեզու և Արժույթ',
@@ -902,10 +902,12 @@ export const translations: Record<Language, Record<string, string>> = {
     'settings.searchDesc': 'Որոնման տող ավտոմոբիլների ցուցակում',
     'settings.documents': 'Փաստաթղթեր',
     'settings.documentsDesc': 'Փաստաթղթերի բաժին ավտոմոբիլների համար',
-    'settings.km': 'Փոխանցորդում',
-    'settings.kmDesc': 'Փոխանցորդման դաշտ կիլոմետրերով',
+    'settings.km': 'Վազք',
+    'settings.kmDesc': 'Վազքի դաշտ կիլոմետրերով',
     'settings.year': 'Տարեթիվ',
     'settings.yearDesc': 'Ավտոմոբիլի տարվա դաշտ',
+    'settings.dashboard': 'Վահանակ',
+    'settings.dashboardDesc': 'Վաճառքի վիճակագրություն և գրաֆիկներ',
     'settings.theme': 'Թեմա',
     'settings.themeDesc': 'Ընտրեք հավելվածքի գույնային թեման',
     'settings.appName': 'Հավելվածքի Անուն',
@@ -922,6 +924,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'settings.resetPassword': 'Գաղտնաբառ',
     'settings.resetPasswordPlaceholder': 'Մուտքագրեք գաղտնաբառը',
     'settings.resetPasswordError': 'Սխալ գաղտնաբառ',
+    'settings.appNameTitle': 'Հավելվածքի Անուն',
+    'status.partnership': 'Գործընկերություն',
   },
 }
 
