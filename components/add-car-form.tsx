@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { UserPlus, X, Plus, CheckCircle } from 'lucide-react'
 import { useToasts } from '@/components/ui/animations'
@@ -18,7 +19,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import type { Car } from '@/lib/types'
+import type { Car, Partner } from '@/lib/types'
 
 interface AddCarFormProps {
   open: boolean
@@ -41,6 +42,9 @@ export function AddCarForm({ open, onOpenChange, onAdd, language = 'ru', feature
   const [purchasePrice, setPurchasePrice] = useState('')
   const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0])
   const [notes, setNotes] = useState('')
+  const [isPartnership, setIsPartnership] = useState(false)
+  const [partners, setPartners] = useState<Array<{id: string, name: string, share: number}>>([])
+  const [newPartnerName, setNewPartnerName] = useState('')
   const { success, error } = useToasts()
 
   const resetForm = () => {
@@ -51,6 +55,32 @@ export function AddCarForm({ open, onOpenChange, onAdd, language = 'ru', feature
     setPurchasePrice('')
     setPurchaseDate(new Date().toISOString().split('T')[0])
     setNotes('')
+    setIsPartnership(false)
+    setPartners([])
+    setNewPartnerName('')
+  }
+
+  const addPartner = () => {
+    if (!newPartnerName.trim()) return
+    
+    const newPartner = {
+      id: Date.now().toString(),
+      name: newPartnerName.trim(),
+      share: partners.length === 0 ? 50 : 25 // First partner gets 50%, others get 25%
+    }
+    
+    setPartners([...partners, newPartner])
+    setNewPartnerName('')
+  }
+
+  const updatePartnerShare = (id: string, share: number) => {
+    setPartners(partners.map(p => 
+      p.id === id ? { ...p, share: Math.max(0, Math.min(100, share)) } : p
+    ))
+  }
+
+  const removePartner = (id: string) => {
+    setPartners(partners.filter(p => p.id !== id))
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -62,7 +92,7 @@ export function AddCarForm({ open, onOpenChange, onAdd, language = 'ru', feature
 
     const carData: Omit<Car, 'id' | 'expenses' | 'status'> = {
       name: name.trim(),
-      isPartnership: false,
+      isPartnership: isPartnership,
       purchasePrice: 0,
       purchaseDate: new Date().toISOString().split('T')[0],
     }
@@ -74,6 +104,13 @@ export function AddCarForm({ open, onOpenChange, onAdd, language = 'ru', feature
     if (purchasePrice.trim()) carData.purchasePrice = parseFloat(purchasePrice.trim())
     if (purchaseDate.trim()) carData.purchaseDate = purchaseDate.trim()
     if (notes.trim()) carData.notes = notes.trim()
+    if (isPartnership && partners.length > 0) {
+      const partnerShares: { [partnerId: string]: number } = {}
+      partners.forEach(partner => {
+        partnerShares[partner.id] = partner.share
+      })
+      carData.partnerShares = partnerShares
+    }
 
     onAdd({
       name: name.trim(),
@@ -82,7 +119,12 @@ export function AddCarForm({ open, onOpenChange, onAdd, language = 'ru', feature
       km: km.trim() ? parseInt(km.trim()) : undefined,
       purchasePrice: parseFloat(purchasePrice),
       purchaseDate,
-      isPartnership: false,
+      isPartnership: isPartnership,
+      partnerShares: isPartnership && partners.length > 0 ? 
+        partners.reduce((acc, partner) => {
+          acc[partner.id] = partner.share
+          return acc
+        }, {} as { [partnerId: string]: number }) : undefined,
       notes: notes.trim(),
     })
     success(t('message.carAdded', language), `Машина "${name.trim()}" успешно добавлена`)
@@ -183,6 +225,78 @@ export function AddCarForm({ open, onOpenChange, onAdd, language = 'ru', feature
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
               />
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="partnership"
+                  checked={isPartnership}
+                  onCheckedChange={setIsPartnership}
+                />
+                <Label htmlFor="partnership">{t('label.partnership', language)}</Label>
+              </div>
+
+              {isPartnership && (
+                <div className="space-y-4">
+                  <Label>{t('label.partners', language)}</Label>
+                  
+                  {/* Add new partner */}
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder={t('placeholder.enterPartnerName', language)}
+                      value={newPartnerName}
+                      onChange={(e) => setNewPartnerName(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && addPartner()}
+                    />
+                    <Button type="button" onClick={addPartner} disabled={!newPartnerName.trim()}>
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  {/* Partners list */}
+                  {partners.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>{t('label.profitShares', language)}</Label>
+                      {partners.map((partner) => (
+                        <div key={partner.id} className="flex items-center gap-2">
+                          <span className="flex-1 text-sm">{partner.name}</span>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              value={partner.share}
+                              onChange={(e) => updatePartnerShare(partner.id, parseInt(e.target.value) || 0)}
+                              className="w-16 h-8 text-xs"
+                              min="0"
+                              max="100"
+                            />
+                            <span className="text-xs text-gray-500">%</span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => removePartner(partner.id)}
+                              className="w-8 h-8 p-0"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {/* Total percentage warning */}
+                      <div className="text-xs text-gray-500">
+                        {t('label.totalShares', language)}: {partners.reduce((sum, p) => sum + p.share, 0)}%
+                        {partners.reduce((sum, p) => sum + p.share, 0) !== 100 && (
+                          <span className="text-red-500 ml-1">
+                            ({t('warning.shouldBe100', language)})
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex gap-2 pt-4">

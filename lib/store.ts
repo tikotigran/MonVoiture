@@ -1,19 +1,20 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import type { AppState, Car, Expense, Partner, Document, AppSettings, ChecklistItem } from './types'
+import type { AppState, Car, Expense, Partner, Document, AppSettings, ChecklistItem, UserInfo } from './types'
 import { generateId } from './format'
 import { db } from './firebase'
-import { doc, getDoc, setDoc, collection, getDocs, query, where, writeBatch, deleteDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc, collection, getDocs, writeBatch, deleteDoc } from 'firebase/firestore'
 
 const defaultState: AppState = {
   cars: [],
   documents: [],
   settings: {
+    partners: [],
     currency: '€',
     language: 'ru',
     theme: 'system',
-    appName: 'EDVI AUTO',
+    appName: 'MyGarage',
     features: {
       sorting: true,
       purchaseDate: true,
@@ -22,8 +23,64 @@ const defaultState: AppState = {
       documents: true,
       km: true,
       year: true,
+      partnership: true,
+      dashboard: true,
     },
+    userInfo: undefined,
   },
+  userInfo: undefined,
+}
+
+const defaultFeatures = defaultState.settings.features
+const getSettingsStorageKey = (userId: string) => `monvoiture:settings:${userId}`
+
+function normalizeSettings(input?: Partial<AppSettings> | null): AppSettings {
+  const safeLanguage = input?.language
+  const safeTheme = input?.theme
+
+  return {
+    partners: input?.partners || defaultState.settings.partners,
+    currency: (input?.currency || defaultState.settings.currency).trim() || defaultState.settings.currency,
+    language:
+      safeLanguage === 'ru' || safeLanguage === 'fr' || safeLanguage === 'hy' || safeLanguage === 'en'
+        ? safeLanguage
+        : defaultState.settings.language,
+    theme: safeTheme === 'light' || safeTheme === 'dark' || safeTheme === 'system' ? safeTheme : defaultState.settings.theme,
+    appName: (input?.appName || defaultState.settings.appName).trim() || defaultState.settings.appName,
+    features: {
+      sorting: input?.features?.sorting ?? defaultFeatures.sorting,
+      purchaseDate: input?.features?.purchaseDate ?? defaultFeatures.purchaseDate,
+      licensePlate: input?.features?.licensePlate ?? defaultFeatures.licensePlate,
+      search: input?.features?.search ?? defaultFeatures.search,
+      documents: input?.features?.documents ?? defaultFeatures.documents,
+      km: input?.features?.km ?? defaultFeatures.km,
+      year: input?.features?.year ?? defaultFeatures.year,
+      partnership: input?.features?.partnership ?? defaultFeatures.partnership,
+      dashboard: input?.features?.dashboard ?? defaultFeatures.dashboard,
+    },
+    userInfo: input?.userInfo || defaultState.settings.userInfo,
+  }
+}
+
+function loadSettingsFromLocalStorage(userId: string): AppSettings | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = window.localStorage.getItem(getSettingsStorageKey(userId))
+    if (!raw) return null
+    return normalizeSettings(JSON.parse(raw) as Partial<AppSettings>)
+  } catch (error) {
+    console.error('[store] Failed to load settings from localStorage:', error)
+    return null
+  }
+}
+
+function saveSettingsToLocalStorage(userId: string, settings: AppSettings) {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(getSettingsStorageKey(userId), JSON.stringify(normalizeSettings(settings)))
+  } catch (error) {
+    console.error('[store] Failed to save settings to localStorage:', error)
+  }
 }
 
 const loadStateFromFirestore = async (userId: string): Promise<AppState | null> => {
@@ -45,7 +102,7 @@ const loadStateFromFirestore = async (userId: string): Promise<AppState | null> 
     ]
     
     const settingsSnapshots = await Promise.all(settingsPromises)
-    let settings = defaultState.settings
+    const settings = normalizeSettings()
     
     // Extract settings from individual documents
     const currencySnap = settingsSnapshots[0]
@@ -62,21 +119,29 @@ const loadStateFromFirestore = async (userId: string): Promise<AppState | null> 
       features: featuresSnap.exists()
     })
     
+    const loadedSettings: Partial<AppSettings> = {}
     if (currencySnap.exists()) {
-      settings.currency = currencySnap.data().value
+      const data = currencySnap.data() as any
+      loadedSettings.currency = data.currency ?? data.value
     }
     if (languageSnap.exists()) {
-      settings.language = languageSnap.data().value
+      const data = languageSnap.data() as any
+      loadedSettings.language = data.language ?? data.value
     }
     if (themeSnap.exists()) {
-      settings.theme = themeSnap.data().value
+      const data = themeSnap.data() as any
+      loadedSettings.theme = data.theme ?? data.value
     }
     if (appNameSnap.exists()) {
-      settings.appName = appNameSnap.data().value
+      const data = appNameSnap.data() as any
+      loadedSettings.appName = data.appName ?? data.value
     }
     if (featuresSnap.exists()) {
-      settings.features = featuresSnap.data().items
+      const data = featuresSnap.data() as any
+      loadedSettings.features = data.features ?? data.items
     }
+
+    let effectiveSettingsInput: Partial<AppSettings> = { ...loadedSettings }
 
     // Also check if old settings exist and migrate them
     const oldSettingsRef = doc(db, 'users', userId, 'settings', 'main')
@@ -87,41 +152,50 @@ const loadStateFromFirestore = async (userId: string): Promise<AppState | null> 
       console.log('[store] Migrating old settings to new structure...')
       
       const oldData = oldSettingsSnap.data() as any
+      // Use legacy values as fallback for current app session,
+      // so we don't briefly revert to defaults before autosave.
+      effectiveSettingsInput = {
+        currency: loadedSettings.currency ?? oldData.currency,
+        language: loadedSettings.language ?? oldData.language,
+        theme: loadedSettings.theme ?? oldData.theme,
+        appName: loadedSettings.appName ?? oldData.appName,
+        features: loadedSettings.features ?? oldData.features,
+      }
       const migrationPromises = []
       
       // Migrate each setting to new structure
       if (oldData.currency) {
         migrationPromises.push(
           setDoc(doc(db, 'users', userId, 'settings', 'currency'), { 
-            value: oldData.currency 
+            currency: oldData.currency 
           })
         )
       }
       if (oldData.language) {
         migrationPromises.push(
           setDoc(doc(db, 'users', userId, 'settings', 'language'), { 
-            value: oldData.language 
+            language: oldData.language 
           })
         )
       }
       if (oldData.theme) {
         migrationPromises.push(
           setDoc(doc(db, 'users', userId, 'settings', 'theme'), { 
-            value: oldData.theme 
+            theme: oldData.theme 
           })
         )
       }
       if (oldData.appName) {
         migrationPromises.push(
           setDoc(doc(db, 'users', userId, 'settings', 'appName'), { 
-            value: oldData.appName 
+            appName: oldData.appName 
           })
         )
       }
       if (oldData.features) {
         migrationPromises.push(
           setDoc(doc(db, 'users', userId, 'settings', 'features'), { 
-            items: oldData.features 
+            features: oldData.features 
           })
         )
       }
@@ -133,39 +207,87 @@ const loadStateFromFirestore = async (userId: string): Promise<AppState | null> 
       await deleteDoc(oldSettingsRef)
       console.log('[store] Old settings deleted')
     } else {
-      // Create initial settings if none exist
-      console.log('[store] No old settings found, creating initial settings...')
-      const initialSettings = defaultState.settings
-      const initialPromises = []
+      // Create initial settings only when nothing exists yet.
+      // If any settings document already exists, keep user settings intact.
+      const hasAnySettings =
+        currencySnap.exists() ||
+        languageSnap.exists() ||
+        themeSnap.exists() ||
+        appNameSnap.exists() ||
+        featuresSnap.exists()
+
+      if (!hasAnySettings) {
+        console.log('[store] No settings found, creating initial settings...')
+        const initialSettings = defaultState.settings
+        const initialPromises = []
+        
+        initialPromises.push(
+          setDoc(doc(db, 'users', userId, 'settings', 'currency'), { 
+            currency: initialSettings.currency 
+          })
+        )
+        initialPromises.push(
+          setDoc(doc(db, 'users', userId, 'settings', 'language'), { 
+            language: initialSettings.language 
+          })
+        )
+        initialPromises.push(
+          setDoc(doc(db, 'users', userId, 'settings', 'theme'), { 
+            theme: initialSettings.theme 
+          })
+        )
+        initialPromises.push(
+          setDoc(doc(db, 'users', userId, 'settings', 'appName'), { 
+            appName: initialSettings.appName 
+          })
+        )
+        initialPromises.push(
+          setDoc(doc(db, 'users', userId, 'settings', 'features'), { 
+            features: initialSettings.features 
+          })
+        )
+        
+        await Promise.all(initialPromises)
+        console.log('[store] Initial settings created')
+      } else {
+        console.log('[store] Existing settings found, skipping default settings creation')
+      }
+    }
+
+    const normalizedLoadedSettings = normalizeSettings(effectiveSettingsInput)
+
+    // Load user profile - используем collection чтобы избежать ошибки с нечетными сегментами
+    console.log('[store] Starting to load user profile for userId:', userId)
+    
+    const profileRef = doc(db, 'users', userId, 'profile', 'doc')
+    const profileSnap = await getDoc(profileRef)
+    let userInfo: UserInfo | undefined
+    
+    // Also try to load userInfo from settings (fallback)
+    const settingsUserInfoRef = doc(db, 'users', userId, 'settings', 'userInfo')
+    const settingsUserInfoSnap = await getDoc(settingsUserInfoRef)
+    
+    console.log('[store] Profile doc exists:', profileSnap.exists())
+    console.log('[store] Settings userInfo doc exists:', settingsUserInfoSnap.exists())
+    
+    if (settingsUserInfoSnap.exists()) {
+      const profileData = settingsUserInfoSnap.data() as UserInfo
+      userInfo = profileData
+      console.log('[store] Loaded user profile from settings:', userInfo)
+    } else if (profileSnap.exists()) {
+      const profileData = profileSnap.data() as UserInfo
+      userInfo = profileData
+      console.log('[store] Loaded user profile from profile:', userInfo)
       
-      initialPromises.push(
-        setDoc(doc(db, 'users', userId, 'settings', 'currency'), { 
-          value: initialSettings.currency 
-        })
-      )
-      initialPromises.push(
-        setDoc(doc(db, 'users', userId, 'settings', 'language'), { 
-          value: initialSettings.language 
-        })
-      )
-      initialPromises.push(
-        setDoc(doc(db, 'users', userId, 'settings', 'theme'), { 
-          value: initialSettings.theme 
-        })
-      )
-      initialPromises.push(
-        setDoc(doc(db, 'users', userId, 'settings', 'appName'), { 
-          value: initialSettings.appName 
-        })
-      )
-      initialPromises.push(
-        setDoc(doc(db, 'users', userId, 'settings', 'features'), { 
-          items: initialSettings.features 
-        })
-      )
-      
-      await Promise.all(initialPromises)
-      console.log('[store] Initial settings created')
+      // Автоматически копируем в settings/userInfo для будущих загрузок
+      try {
+        await setDoc(settingsUserInfoRef, profileData)
+        console.log('[store] Auto-copied profile to settings/userInfo')
+      } catch (error) {
+        console.error('[store] Failed to auto-copy profile to settings:', error)
+      }
+    } else {
+      console.log('[store] No user profile found in profile or settings')
     }
 
     // Load documents
@@ -215,125 +337,18 @@ const loadStateFromFirestore = async (userId: string): Promise<AppState | null> 
     }
     console.log(`[store] Loaded ${cars.length} cars with expenses from Firebase`)
     
-    return { cars, documents, settings }
+    return { cars, documents, settings: normalizedLoadedSettings, userInfo }
     
   } catch (error) {
     console.error('[store] Failed to load state from Firestore:', error)
-    return { cars: [], documents: [], settings: defaultState.settings }
-  }
-}
-
-async function saveCarsToNewStructure(userId: string, cars: Car[]) {
-  try {
-    if (!db) return
-    console.log('[store] Migrating cars to new structure...')
-    const batch = writeBatch(db)
-    const carsRef = collection(db, 'users', userId, 'cars')
-    
-    cars.forEach((car) => {
-      // Remove undefined fields before saving
-      const carData = { ...car }
-      if (carData.licensePlate === undefined) {
-        delete carData.licensePlate
-      }
-      if (carData.salePrice === undefined) {
-        delete carData.salePrice
-      }
-      if (carData.saleDate === undefined) {
-        delete carData.saleDate
-      }
-      if (carData.deleted === undefined) {
-        delete carData.deleted
-      }
-      
-      const carRef = doc(carsRef, car.id)
-      batch.set(carRef, carData)
-    })
-    
-    await batch.commit()
-    console.log('[store] Successfully migrated cars to new structure')
-  } catch (error) {
-    console.error('[store] Failed to migrate cars:', error)
-  }
-}
-
-async function saveStateToNewStructure(userId: string, state: AppState) {
-  try {
-    if (!db) return
-    console.log('[store] Migrating state to new structure...')
-    
-    // Save settings
-    const cleanSettings = {
-      currency: state.settings.currency,
-      language: state.settings.language,
-      theme: state.settings.theme,
-      appName: state.settings.appName,
-      features: state.settings.features,
-    }
-    const settingsRef = doc(db, 'users', userId, 'settings', 'main')
-    await setDoc(settingsRef, cleanSettings)
-    
-    // Save cars
-    await saveCarsToNewStructure(userId, state.cars)
-    
-    console.log('[store] Successfully migrated state to new structure')
-  } catch (error) {
-    console.error('[store] Failed to migrate state:', error)
-  }
-}
-
-async function saveStateToFirestore(userId: string, state: AppState) {
-  try {
-    if (!db) return
-    console.log('[store] Starting save to Firestore for user', userId)
-    
-    // Save settings
-    const cleanSettings = {
-      currency: state.settings.currency,
-      language: state.settings.language,
-      theme: state.settings.theme,
-      appName: state.settings.appName,
-      features: state.settings.features,
-    }
-    const settingsRef = doc(db, 'users', userId, 'settings', 'main')
-    await setDoc(settingsRef, cleanSettings, { merge: true })
-    console.log('[store] Settings saved to Firestore')
-    
-    // Save cars (batch operation for better performance)
-    const batch = writeBatch(db)
-    const carsRef = collection(db, 'users', userId, 'cars')
-    
-    state.cars.forEach((car) => {
-      // Remove undefined fields before saving
-      const carData = { ...car }
-      if (carData.licensePlate === undefined) {
-        delete carData.licensePlate
-      }
-      if (carData.salePrice === undefined) {
-        delete carData.salePrice
-      }
-      if (carData.saleDate === undefined) {
-        delete carData.saleDate
-      }
-      if (carData.deleted === undefined) {
-        delete carData.deleted
-      }
-      
-      const carRef = doc(carsRef, car.id)
-      batch.set(carRef, carData, { merge: true })
-    })
-    
-    await batch.commit()
-    console.log('[store] Successfully saved', state.cars.length, 'cars to Firestore')
-  } catch (error) {
-    console.error('[store] Failed to save state to Firestore:', error)
-    console.error('[store] Error details:', JSON.stringify(error, null, 2))
+    return { cars: [], documents: [], settings: defaultState.settings, userInfo: undefined }
   }
 }
 
 export function useAppStore(userId?: string | null) {
   const [state, setState] = useState<AppState>(defaultState)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [isInitializing, setIsInitializing] = useState(true)
 
   useEffect(() => {
     let cancelled = false
@@ -342,18 +357,35 @@ export function useAppStore(userId?: string | null) {
       if (!userId) {
         setState(defaultState)
         setIsLoaded(true)
+        setIsInitializing(false)
         return
+      }
+
+      const localSettings = loadSettingsFromLocalStorage(userId)
+      if (localSettings) {
+        setState((prev) => ({ ...prev, settings: localSettings }))
       }
 
       const fromRemote = await loadStateFromFirestore(userId)
       if (cancelled) return
 
       if (fromRemote) {
-        setState(fromRemote)
+        const { cars, documents, settings, userInfo } = fromRemote
+        const mergedSettings = normalizeSettings({
+          ...settings,
+          ...(localSettings || {}),
+          features: {
+            ...settings.features,
+            ...(localSettings?.features || {}),
+          },
+          userInfo: userInfo, // ✅ Include userInfo in mergedSettings
+        })
+        setState({ cars, documents, settings: mergedSettings, userInfo })
       } else {
-        setState(defaultState)
+        setState({ ...defaultState, settings: localSettings || defaultState.settings, userInfo: undefined })
       }
       setIsLoaded(true)
+      setIsInitializing(false)
     }
 
     init()
@@ -363,55 +395,127 @@ export function useAppStore(userId?: string | null) {
     }
   }, [userId])
 
+  // Separate useEffect to reload profile when needed
   useEffect(() => {
-    if (!isLoaded || !userId || !db) return
+    if (!userId || isLoaded || isInitializing) return
+    
+    const loadProfile = async () => {
+      console.log('[store] Reloading user profile for userId:', userId)
+      
+      const settingsUserInfoRef = doc(db, 'users', userId, 'settings', 'userInfo')
+      const settingsUserInfoSnap = await getDoc(settingsUserInfoRef)
+      
+      if (settingsUserInfoSnap.exists()) {
+        const profileData = settingsUserInfoSnap.data() as UserInfo
+        console.log('[store] Reloaded user profile from settings:', profileData)
+        setState(prev => ({
+          ...prev,
+          settings: {
+            ...prev.settings,
+            userInfo: profileData
+          }
+        }))
+      } else {
+        console.log('[store] No user profile found in settings')
+      }
+    }
+    
+    loadProfile()
+  }, [userId, isLoaded, isInitializing])
+
+  useEffect(() => {
+    if (!userId || !isLoaded || isInitializing) return
+    
+    // Сохраняем настройки но сохраняем существующий userInfo если он есть
+    const storageKey = `monvoiture:settings:${userId}`
+    const existingSettings = localStorage.getItem(storageKey)
+    
+    let settingsToSave = { ...state.settings }
+    
+    // Если в localStorage есть userInfo а в state.settings нет, сохраняем его
+    if (existingSettings) {
+      try {
+        const parsedExisting = JSON.parse(existingSettings)
+        if (parsedExisting.userInfo && !state.settings.userInfo) {
+          settingsToSave.userInfo = parsedExisting.userInfo
+          console.log('[store] Preserved existing userInfo from localStorage')
+        }
+      } catch (error) {
+        console.error('[store] Error parsing existing settings:', error)
+      }
+    }
+    
+    saveSettingsToLocalStorage(userId, settingsToSave)
+  }, [userId, isLoaded, isInitializing, state.settings])
+
+  useEffect(() => {
+    if (!isLoaded || !userId || !db || isInitializing) return
     // Only save settings automatically, not cars (cars are saved individually)
     console.log('[store] Auto-save effect triggered, but only saving settings')
     console.log('[store] Current cars count:', state.cars.length)
     console.log('[store] Current documents count:', state.documents.length)
     
     // Save settings as individual documents like cars and documents
-    const settingsData = state.settings
+    const settingsData = normalizeSettings(state.settings)
     const settingsPromises = []
     
     // Validate and sanitize settings before saving
-    const cleanCurrency = settingsData.currency || defaultState.settings.currency
-    const cleanLanguage = settingsData.language || defaultState.settings.language
-    const cleanTheme = settingsData.theme || defaultState.settings.theme
-    const cleanAppName = settingsData.appName || defaultState.settings.appName
-    const cleanFeatures = settingsData.features || defaultState.settings.features
+    console.log('[store] Raw settings data:', settingsData)
+    const cleanCurrency = settingsData.currency
+    const cleanLanguage = settingsData.language
+    const cleanTheme = settingsData.theme
+    const cleanAppName = settingsData.appName
+    const cleanFeatures = settingsData.features
+    
+    console.log('[store] Cleaned settings:', {
+      cleanCurrency,
+      cleanLanguage,
+      cleanTheme,
+      cleanAppName,
+      cleanFeatures,
+      rawCurrency: settingsData.currency,
+      rawLanguage: settingsData.language,
+      rawTheme: settingsData.theme,
+      rawAppName: settingsData.appName
+    })
+    
+    // Additional validation to prevent undefined values
+    if (!cleanCurrency || cleanCurrency === 'undefined' || cleanCurrency === undefined || cleanCurrency === '') {
+      console.error('[store] Invalid currency value, using default €')
+      return
+    }
     
     // Save each setting as a separate document
     settingsPromises.push(
       setDoc(doc(db, 'users', userId, 'settings', 'currency'), { 
-        value: cleanCurrency 
+        currency: cleanCurrency 
       })
     )
     settingsPromises.push(
       setDoc(doc(db, 'users', userId, 'settings', 'language'), { 
-        value: cleanLanguage 
+        language: cleanLanguage 
       })
     )
     settingsPromises.push(
       setDoc(doc(db, 'users', userId, 'settings', 'theme'), { 
-        value: cleanTheme 
+        theme: cleanTheme 
       })
     )
     settingsPromises.push(
       setDoc(doc(db, 'users', userId, 'settings', 'appName'), { 
-        value: cleanAppName 
+        appName: cleanAppName 
       })
     )
     settingsPromises.push(
       setDoc(doc(db, 'users', userId, 'settings', 'features'), { 
-        items: cleanFeatures 
+        features: cleanFeatures 
       })
     )
     
     Promise.all(settingsPromises)
       .then(() => console.log('[store] Settings saved as individual documents'))
       .catch((error) => console.error('[store] Failed to save settings:', error))
-  }, [state.settings, isLoaded, userId])
+  }, [state.settings, isLoaded, userId, db, isInitializing])
 
   const addCar = useCallback((car: Omit<Car, 'id' | 'expenses' | 'status'>) => {
     console.log('[store] addCar called with:', car)
@@ -441,19 +545,7 @@ export function useAppStore(userId?: string | null) {
         .then(() => {
           console.log('[store] New car saved to Firestore:', newCar.id)
           console.log('[store] Car data saved:', carData)
-          // Force reload after a short delay to ensure consistency
-          setTimeout(() => {
-            console.log('[store] Forcing reload after adding car')
-            if (userId) {
-              loadStateFromFirestore(userId).then((newState) => {
-                if (newState) {
-                  console.log('[store] Reloaded state after adding car:', newState.cars.length, 'cars')
-                  console.log('[store] Car names after reload:', newState.cars.map(c => ({ id: c.id, name: c.name })))
-                  setState(newState)
-                }
-              })
-            }
-          }, 1000)
+          console.log('[store] Car added successfully without reload')
         })
         .catch((error) => console.error('[store] Failed to save new car to Firestore:', error))
     }
@@ -672,7 +764,7 @@ export function useAppStore(userId?: string | null) {
     }))
   }, [])
 
-  const updateFeatures = useCallback((features: Partial<{ sorting: boolean; purchaseDate: boolean; licensePlate: boolean; search: boolean; documents: boolean; km: boolean; year: boolean }>) => {
+  const updateFeatures = useCallback((features: Partial<{ sorting: boolean; purchaseDate: boolean; licensePlate: boolean; search: boolean; documents: boolean; km: boolean; year: boolean; partnership: boolean; dashboard: boolean }>) => {
     console.log('[store] updateFeatures called with:', features)
     setState((prev) => {
       const currentFeatures = prev.settings.features || {
@@ -683,6 +775,8 @@ export function useAppStore(userId?: string | null) {
         documents: true,
         km: true,
         year: true,
+        partnership: true,
+        dashboard: true,
       }
       
       const newFeatures = {
@@ -863,40 +957,63 @@ export function useAppStore(userId?: string | null) {
     }))
   }, [])
 
-  // Auto-save settings to Firebase when they change
-  useEffect(() => {
-    if (userId && db && isLoaded) {
-      console.log('[store] Auto-saving settings to Firestore as individual documents')
-      
-      const timeoutId = setTimeout(() => {
-        // Validate and sanitize settings before saving
-        const cleanCurrency = state.settings.currency || defaultState.settings.currency
-        const cleanLanguage = state.settings.language || defaultState.settings.language
-        const cleanTheme = state.settings.theme || defaultState.settings.theme
-        const cleanAppName = state.settings.appName || defaultState.settings.appName
-        const cleanFeatures = state.settings.features || defaultState.settings.features
-        
-        const settingsPromises = [
-          setDoc(doc(db, 'users', userId, 'settings', 'currency'), 
-            { currency: cleanCurrency }),
-          setDoc(doc(db, 'users', userId, 'settings', 'language'), 
-            { language: cleanLanguage }),
-          setDoc(doc(db, 'users', userId, 'settings', 'theme'), 
-            { theme: cleanTheme }),
-          setDoc(doc(db, 'users', userId, 'settings', 'appName'), 
-            { appName: cleanAppName }),
-          setDoc(doc(db, 'users', userId, 'settings', 'features'), 
-            { features: cleanFeatures }),
-        ]
-        
-        Promise.all(settingsPromises)
-          .then(() => console.log('[store] Settings auto-saved to Firestore'))
-          .catch((error) => console.error('[store] Failed to auto-save settings:', error))
-      }, 1000) // 1 second debounce
-      
-      return () => clearTimeout(timeoutId)
+  const updatePartners = useCallback((partners: Partner[]) => {
+    console.log('[store] Updating partners to:', partners)
+    setState(prev => ({
+      ...prev,
+      settings: {
+        ...prev.settings,
+        partners,
+      },
+    }))
+  }, [])
+
+  const addPartner = useCallback((name: string) => {
+    const newPartner: Partner = {
+      id: Date.now().toString(),
+      name: name.trim(),
     }
-  }, [userId, db, isLoaded, state.settings])
+    setState(prev => ({
+      ...prev,
+      settings: {
+        ...prev.settings,
+        partners: [...prev.settings.partners, newPartner],
+      },
+    }))
+  }, [])
+
+  const removePartner = useCallback((id: string) => {
+    setState(prev => ({
+      ...prev,
+      settings: {
+        ...prev.settings,
+        partners: prev.settings.partners.filter(p => p.id !== id),
+      },
+    }))
+  }, [])
+
+  const updateUserInfo = useCallback(async (userInfo: UserInfo) => {
+    console.log('[store] Updating user info:', userInfo)
+    
+    // Update local state
+    setState(prev => ({
+      ...prev,
+      settings: {
+        ...prev.settings,
+        userInfo,
+      },
+    }))
+    
+    // Save to Firebase
+    if (userId && db) {
+      try {
+        await setDoc(doc(db, 'users', userId, 'settings', 'userInfo'), userInfo)
+        console.log('[store] User info saved to Firebase settings')
+      } catch (error) {
+        console.error('[store] Failed to save user info to Firebase:', error)
+      }
+    }
+  }, [userId, db])
 
   return {
     state,
@@ -914,9 +1031,13 @@ export function useAppStore(userId?: string | null) {
     updateLanguage,
     updateFeatures,
     updateAppName,
+    updatePartners,
+    addPartner,
+    removePartner,
     addDocument,
     deleteDocument,
     updateTheme,
+    updateUserInfo,
     resetGarage,
   }
 }

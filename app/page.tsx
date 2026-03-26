@@ -11,7 +11,7 @@ import { Header } from '@/components/header'
 import { CarCard } from '@/components/car-card'
 import { CarDetails } from '@/components/car-details'
 import { CarDocuments } from '@/components/car-documents'
-import { AddCarForm } from '@/components/add-car-form'
+import { AddCarForm } from '@/components/add-car-form-per-car'
 import { EditCarForm } from '@/components/edit-car-form'
 import { SettingsSheet } from '@/components/settings-sheet'
 import { EmptyState } from '@/components/empty-state'
@@ -19,7 +19,8 @@ import { StatsSummary } from '@/components/stats-summary'
 import { Dashboard } from '@/components/dashboard'
 import { LoginScreen } from '@/components/login-screen'
 import { Spinner } from '@/components/ui/spinner'
-import { type Car } from '@/lib/types'
+import { DynamicHead } from '@/components/dynamic-head'
+import { type Car, Partner } from '@/lib/types'
 import { t } from '@/lib/translations'
 
 type FilterType = 'all' | 'active' | 'sold'
@@ -43,9 +44,11 @@ export default function Home() {
     updateLanguage,
     updateFeatures,
     updateAppName,
+    updatePartners,
     addDocument,
     deleteDocument,
     updateTheme,
+    updateUserInfo,
     resetGarage,
   } = useAppStore(user?.uid)
 
@@ -62,16 +65,13 @@ export default function Home() {
 
   // Apply theme changes immediately
   useEffect(() => {
-    console.log('[page] Theme useEffect triggered, theme:', state.settings.theme)
     const root = window.document.documentElement
     root.classList.remove('light', 'dark')
     
     if (state.settings.theme === 'system') {
       const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-      console.log('[page] Applying system theme:', systemTheme)
       root.classList.add(systemTheme)
     } else {
-      console.log('[page] Applying theme:', state.settings.theme)
       root.classList.add(state.settings.theme)
     }
   }, [state.settings.theme])
@@ -183,6 +183,7 @@ export default function Home() {
           deleteCar(selectedCar.id)
           setSelectedCarId(null)
         }}
+        userInfo={state.settings.userInfo}
         onUpdateChecklist={(checklist) => updateCar(selectedCar.id, { checklist })}
       />
     )
@@ -199,37 +200,40 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
+      <DynamicHead garageName={state.settings.userInfo?.garageName} />
       <Header 
         onOpenSettings={() => setShowSettings(true)} 
         onLogout={handleLogout}
         onSearch={setSearchQuery}
         searchQuery={searchQuery}
         language={state.settings.language}
-        appName={state.settings.appName}
+        appName={state.settings.userInfo?.garageName || state.settings.appName}
         showSearch={state.settings.features?.search}
       />
 
       <main className="p-4 pb-24 space-y-4">
         {/* Переключатель между Дашбордом и списком машин */}
-        <div className="flex gap-2 mb-4">
-          <Button
-            variant={showDashboard ? "default" : "outline"}
-            onClick={() => setShowDashboard(true)}
-            className="flex-1"
-          >
-            📊 {t('button.dashboard', state.settings.language)}
-          </Button>
-          <Button
-            variant={!showDashboard ? "default" : "outline"}
-            onClick={() => setShowDashboard(false)}
-            className="flex-1"
-          >
-            🚗 {t('button.cars', state.settings.language)}
-          </Button>
-        </div>
+        {state.settings.features?.dashboard && (
+          <div className="flex gap-2 mb-4">
+            <Button
+              variant={showDashboard ? "default" : "outline"}
+              onClick={() => setShowDashboard(true)}
+              className="flex-1"
+            >
+              📊 {t('button.dashboard', state.settings.language)}
+            </Button>
+            <Button
+              variant={!showDashboard ? "default" : "outline"}
+              onClick={() => setShowDashboard(false)}
+              className="flex-1"
+            >
+              🚗 {t('button.cars', state.settings.language)}
+            </Button>
+          </div>
+        )}
 
         {/* Дашборд */}
-        {showDashboard && (
+        {showDashboard && state.settings.features?.dashboard && (
           <Dashboard 
             cars={state.cars} 
             currency={state.settings.currency} 
@@ -238,7 +242,7 @@ export default function Home() {
         )}
 
         {/* Список машин */}
-        {!showDashboard && (
+        {(!showDashboard || !state.settings.features?.dashboard) && (
           <>
             {/* Фильтры и сортировка */}
             {state.cars.length > 0 && (
@@ -325,10 +329,12 @@ export default function Home() {
         open={showAddCar}
         onOpenChange={setShowAddCar}
         onAdd={addCar}
+        ownerName={state.settings.userInfo?.firstName || 'Владелец'}
         language={state.settings.language}
         features={state.settings.features || { sorting: true, purchaseDate: true, licensePlate: true, km: true, year: true }}
+        partners={state.settings.partners}
       />
-
+      
       {/* Edit Car Form */}
       <EditCarForm
         open={showEditCar}
@@ -344,6 +350,7 @@ export default function Home() {
         open={showSettings}
         onOpenChange={setShowSettings}
         user={user}
+        userInfo={state.settings.userInfo}
         currency={state.settings.currency}
         language={state.settings.language}
         appName={state.settings.appName}
@@ -362,6 +369,11 @@ export default function Home() {
         onUpdateLanguage={updateLanguage}
         onUpdateAppName={updateAppName}
         onUpdateTheme={updateTheme}
+        onUpdateUserInfo={async (userInfo) => {
+          console.log('Profile update:', userInfo)
+          // Save to Firebase via store
+          await updateUserInfo(userInfo)
+        }}
       />
     </div>
   )

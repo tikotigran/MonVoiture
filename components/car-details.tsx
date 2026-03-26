@@ -39,7 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import type { Car, Expense, Document } from '@/lib/types'
+import type { Car, Expense, Document, UserInfo } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { t } from '@/lib/translations'
 import { AddExpenseForm } from './add-expense-form'
@@ -66,6 +66,8 @@ interface CarDetailsProps {
   onDeleteDocument: (documentId: string) => void
   onDelete: () => void
   onUpdateChecklist: (checklist: ChecklistItem[]) => void
+  userInfo?: UserInfo
+  onUpdateUserInfo?: (userInfo: UserInfo) => Promise<void>
 }
 
 export function CarDetails({
@@ -87,7 +89,32 @@ export function CarDetails({
   onDeleteDocument,
   onDelete,
   onUpdateChecklist,
+  userInfo,
+  onUpdateUserInfo,
 }: CarDetailsProps) {
+  // Helper function to get partner name by ID
+  const getPartnerName = (partnerId: string): string => {
+    if (partnerId === 'me') {
+      return userInfo?.firstName || t('label.me', language)
+    }
+    if (car.partnerShares && car.partnerNames && car.partnerShares[partnerId]) {
+      // Find partner from car data to get the name
+      const partnerShare = car.partnerShares[partnerId]
+      const partnerName = car.partnerNames[partnerId]
+      return partnerShare > 0 ? (partnerName || t('label.partner', language)) : (userInfo?.firstName || t('label.me', language))
+    }
+    return t('label.partner', language)
+  }
+
+  // Helper function to get payer initial
+  const getPayerInitial = (paidBy?: string): string => {
+    if (!paidBy || paidBy === 'me') {
+      return userInfo?.firstName?.charAt(0).toUpperCase() || 'М'
+    }
+    const partnerName = car.partnerNames?.[paidBy]
+    return partnerName?.charAt(0).toUpperCase() || 'П'
+  }
+
   const [showAddExpense, setShowAddExpense] = useState(false)
   const [showSellSheet, setShowSellSheet] = useState(false)
   const [showEditExpense, setShowEditExpense] = useState(false)
@@ -99,8 +126,8 @@ export function CarDetails({
   const [editPaidBy, setEditPaidBy] = useState<string>('me')
   const [salePrice, setSalePrice] = useState('')
   const [saleDate, setSaleDate] = useState(car.saleDate || new Date().toISOString().split('T')[0])
-  const [expenseFilter, setExpenseFilter] = useState<string>('all')
   const [activeTab, setActiveTab] = useState<string>('expenses')
+  const [expenseFilter, setExpenseFilter] = useState<string>('all')
 
   const handleEditExpense = (expense: Expense) => {
     setEditingExpense(expense)
@@ -145,9 +172,46 @@ export function CarDetails({
   const profit = car.salePrice ? car.salePrice - totalInvested : 0
   const isProfitable = profit > 0
 
-  // Filter expenses based on selected tab
-  const filteredExpenses = car.expenses
+  // Calculate partner investments
+  const partnerInvestments: { [partnerId: string]: number } = {}
+  
+  // Add purchase price distribution
+  if (car.isPartnership && car.partnerShares && car.purchasePrice) {
+    Object.entries(car.partnerShares).forEach(([partnerId, share]) => {
+      partnerInvestments[partnerId] = (car.purchasePrice || 0) * (share / 100)
+    })
+  } else if (!car.isPartnership && car.purchasePrice) {
+    partnerInvestments['me'] = car.purchasePrice
+  }
+  
+  // Add expenses
+  car.expenses.forEach(expense => {
+    const payerId = expense.paidBy || 'me'
+    partnerInvestments[payerId] = (partnerInvestments[payerId] || 0) + expense.amount
+  })
+
+  // Calculate returns and profit sharing
+  const partnerReturns: { [partnerId: string]: { investment: number, return: number, profitShare: number } } = {}
+  const profitPerPartner = isProfitable ? profit / Object.keys(partnerInvestments).length : 0
+  
+  Object.entries(partnerInvestments).forEach(([partnerId, investment]) => {
+    const totalReturn = investment + profitPerPartner
+    partnerReturns[partnerId] = {
+      investment,
+      return: totalReturn,
+      profitShare: profitPerPartner
+    }
+  })
+
+  // Sort and filter expenses by date and payer
+  const sortedExpenses = car.expenses
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .filter(expense => {
+      if (expenseFilter === 'all') return true
+      if (expenseFilter === 'me') return !expense.paidBy || expense.paidBy === 'me'
+      if (expenseFilter === 'partner') return expense.paidBy && expense.paidBy !== 'me'
+      return true
+    })
 
   return (
     <div className="min-h-screen bg-background">
@@ -272,7 +336,7 @@ export function CarDetails({
           {activeTab === 'expenses' && (
             <CardContent className="space-y-4 pt-4">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">{t('label.filterByPartner', language)}</p>
+                <p className="text-sm font-medium">{t('tab.expenses', language)}</p>
                 {car.status === 'active' && (
                   <Button
                     variant="outline"
@@ -287,28 +351,40 @@ export function CarDetails({
 
               {/* Filter tabs */}
               <Tabs value={expenseFilter} onValueChange={setExpenseFilter}>
-                  <TabsList className="w-full">
-                    <TabsTrigger value="all" className="flex-1">
-                      {t('tab.all', language)}
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              {filteredExpenses.length === 0 ? (
+                <TabsList className="w-full">
+                  <TabsTrigger value="all" className="flex-1">
+                    ВСЕ
+                  </TabsTrigger>
+                  <TabsTrigger value="me" className="flex-1">
+                    {userInfo?.firstName || 'МОЁ ИМЯ'}
+                  </TabsTrigger>
+                  <TabsTrigger value="partner" className="flex-1">
+                    {car?.partnerNames ? Object.values(car.partnerNames).find(name => name !== userInfo?.firstName) || 'ПАРТНЕР' : 'ПАРТНЕР'}
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+
+                            {sortedExpenses.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-6">
                   {t('message.noExpenses', language)}
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {filteredExpenses.map((expense) => (
+                  {sortedExpenses.map((expense) => (
                     <ContextMenu key={expense.id}>
                       <ContextMenuTrigger>
-                        <div
-                          className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg cursor-pointer active:bg-secondary/50 transition-colors"
+                        <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg cursor-pointer active:bg-secondary/50 transition-colors"
                         >
-                          <div className="flex-1">
-                            <div className="font-medium">{expense.description}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {formatCurrency(expense.amount, currency)} • {formatDate(expense.date)}
+                          <div className="flex items-center gap-3 flex-1">
+                            {/* Payer initial icon */}
+                            <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
+                              {getPayerInitial(expense.paidBy)}
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-medium">{expense.description}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {formatDate(expense.date)}
+                              </div>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 ml-4">
@@ -337,7 +413,7 @@ export function CarDetails({
                     <span className="font-medium text-primary">{t('label.total', language)}</span>
                     <span className="font-bold text-primary">
                       {formatCurrency(
-                        filteredExpenses.reduce((sum, e) => sum + e.amount, 0),
+                        sortedExpenses.reduce((sum, e) => sum + e.amount, 0),
                         currency
                       )}
                     </span>
@@ -406,6 +482,37 @@ export function CarDetails({
                         {formatCurrency(profit, currency)}
                       </span>
                     </div>
+
+                    {/* Partner investment details */}
+                    {car.isPartnership && Object.keys(partnerReturns).length > 0 && (
+                      <div className="mt-4 space-y-3">
+                        <div className="text-sm font-medium text-muted-foreground">Распределение вложений и прибыли:</div>
+                        {Object.entries(partnerReturns).map(([partnerId, data]) => (
+                          <div key={partnerId} className="bg-secondary/30 rounded-lg p-3">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="font-medium">
+                                {partnerId === 'me' ? (userInfo?.firstName || 'МОЁ ИМЯ') : (car.partnerNames?.[partnerId] || 'ПАРТНЕР')}
+                              </span>
+                              <span className="font-bold">
+                                {formatCurrency(data.return, currency)}
+                              </span>
+                            </div>
+                            <div className="text-xs text-muted-foreground space-y-1">
+                              <div className="flex justify-between">
+                                <span>Вложено:</span>
+                                <span>{formatCurrency(data.investment, currency)}</span>
+                              </div>
+                              {isProfitable && (
+                                <div className="flex justify-between">
+                                  <span>Доля прибыли:</span>
+                                  <span className="text-green-600">+{formatCurrency(data.profitShare, currency)}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </>
               ) : (
@@ -515,10 +622,10 @@ export function CarDetails({
       <AddExpenseForm
         open={showAddExpense}
         onOpenChange={setShowAddExpense}
-        partners={[]}
-        isPartnership={false}
         onAdd={onAddExpense}
         language={language}
+        car={car}
+        userInfo={userInfo}
       />
 
       {/* Sell Dialog */}
@@ -645,13 +752,18 @@ export function CarDetails({
                 </SelectContent>
               </Select>
             </div>
-            <Button
-              className="w-full"
-              onClick={handleSaveExpense}
-              disabled={!editDescription || !editAmount}
-            >
-              {t('button.save', language)}
-            </Button>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowEditExpense(false)}>
+                {t('button.cancel', language)}
+              </Button>
+              <Button
+                className="w-full"
+                onClick={handleSaveExpense}
+                disabled={!editDescription || !editAmount}
+              >
+                {t('button.save', language)}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

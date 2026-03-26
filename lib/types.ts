@@ -43,6 +43,7 @@ export interface Car {
   saleDate?: string
   isPartnership: boolean
   partnerShares?: { [partnerId: string]: number } // percentage shares
+  partnerNames?: { [partnerId: string]: string } // partner names by ID
   status: 'active' | 'sold'
   deleted?: boolean // soft delete flag
   createdAt?: string // timestamp when car was created
@@ -56,9 +57,11 @@ export interface UserInfo {
   firstName: string
   lastName: string
   garageName: string
+  email: string
 }
 
 export interface AppSettings {
+  partners: Partner[]
   currency: string
   language: 'ru' | 'fr' | 'hy' | 'en'
   theme: 'light' | 'dark' | 'system'
@@ -71,6 +74,8 @@ export interface AppSettings {
     documents: boolean
     km: boolean
     year: boolean
+    partnership: boolean
+    dashboard: boolean
   }
   // Optional properties for backward compatibility
   reminders?: any
@@ -83,5 +88,6 @@ export interface AppState {
   cars: Car[]
   documents: Document[]
   settings: AppSettings
+  userInfo?: UserInfo
 }
 
