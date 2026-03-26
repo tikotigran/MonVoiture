@@ -16,20 +16,6 @@ export function Dashboard({ cars, currency, language = 'ru' }: DashboardProps) {
   const soldCars = cars.filter(car => car.status === 'sold')
   const activeCars = cars.filter(car => car.status === 'active')
   
-  // Отладочная информация
-  console.log('DEBUG Dashboard:', {
-    totalCars: cars.length,
-    soldCars: soldCars.length,
-    activeCars: activeCars.length,
-    soldCarsData: soldCars.map(car => ({
-      name: car.name,
-      status: car.status,
-      purchasePrice: car.purchasePrice,
-      salePrice: car.salePrice,
-      expensesCount: car.expenses.length
-    }))
-  })
-  
   // Финансовые показатели - только по проданным машинам
   const soldCarsData = soldCars.map(car => {
     const expenses = car.expenses.reduce((eSum, e) => eSum + (e.amount || 0), 0)

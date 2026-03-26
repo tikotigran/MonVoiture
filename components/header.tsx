@@ -1,6 +1,6 @@
 'use client'
 
-import { Car, MoreVertical, LogOut, Search } from 'lucide-react'
+import { Car, MoreVertical, LogOut, Search, Shield } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -28,7 +28,7 @@ export function Header({
   onSearch, 
   searchQuery, 
   language = 'ru', 
-  appName = 'EDVI AUTO',
+  appName = 'MyGarage',
   showSearch = true,
   onUpdateLanguage
 }: HeaderProps) {
@@ -66,6 +66,14 @@ export function Header({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {/* Admin Panel Link - только для админа */}
+              {typeof window !== 'undefined' && localStorage.getItem('user') && 
+               JSON.parse(localStorage.getItem('user') || '{}').email === 'admin@monvoiture.com' && (
+                <DropdownMenuItem onClick={() => window.open('/admin', '_blank')}>
+                  <Shield className="w-4 h-4 mr-2" />
+                  Админ Панель
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={onOpenSettings}>
                 {t('button.settings', language)}
               </DropdownMenuItem>

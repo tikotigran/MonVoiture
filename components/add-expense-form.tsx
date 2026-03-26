@@ -1,10 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Wallet, Calendar, Tag, User } from 'lucide-react'
+import { Plus, Wallet, Calendar, Tag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   Dialog,
   DialogContent,
@@ -13,58 +14,76 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { cn } from '@/lib/utils'
-import type { Partner, Expense } from '@/lib/types'
+import type { Expense, Car, UserInfo } from '@/lib/types'
 import { t } from '@/lib/translations'
 
 interface AddExpenseFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  partners: Partner[]
-  isPartnership: boolean
   onAdd: (expense: Omit<Expense, 'id'>) => void
   language?: 'ru' | 'fr' | 'hy' | 'en'
+  car?: Car
+  userInfo?: UserInfo
 }
 
 export function AddExpenseForm({
   open,
   onOpenChange,
-  partners,
-  isPartnership,
   onAdd,
   language = 'ru',
+  car,
+  userInfo,
 }: AddExpenseFormProps) {
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState<Expense['category']>('parts')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [paidBy, setPaidBy] = useState<string>('')
+  const [paidBy, setPaidBy] = useState<string>('me')
+
+  // Helper function to get partner options
+  const getPartnerOptions = () => {
+    const options = [
+      { value: 'me', label: userInfo?.firstName || t('label.me', language) }
+    ]
+    
+    if (car?.partnerNames) {
+      Object.entries(car.partnerNames).forEach(([partnerId, partnerName]) => {
+        // Skip 'me' to avoid duplicates
+        if (partnerId !== 'me' && partnerName) {
+          options.push({
+            value: partnerId,
+            label: partnerName
+          })
+        }
+      })
+    }
+    
+    // Remove duplicates based on value
+    const uniqueOptions = options.filter((option, index, self) =>
+      index === self.findIndex((opt) => opt.value === option.value)
+    )
+    
+    return uniqueOptions
+  }
 
   const resetForm = () => {
     setDescription('')
     setAmount('')
     setCategory('parts')
     setDate(new Date().toISOString().split('T')[0])
-    setPaidBy('')
+    setPaidBy('me')
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!description.trim() || !amount || (isPartnership && !paidBy)) return
+    if (!description.trim() || !amount) return
 
     onAdd({
       description: description.trim(),
       amount: parseFloat(amount),
       category,
       date,
-      paidBy: isPartnership ? paidBy : undefined,
+      paidBy: paidBy === 'me' ? 'me' : paidBy,
     })
 
     resetForm()
@@ -138,28 +157,26 @@ export function AddExpenseForm({
             />
           </div>
 
-          {isPartnership && (
-            <div className="space-y-1">
-              <Label htmlFor="paid-by">{t('label.paidBy', language)}</Label>
-              <ToggleGroup
-                type="single"
-                value={paidBy}
-                onValueChange={setPaidBy}
-                className="w-full"
-              >
-                {partners.map((partner) => (
-                  <ToggleGroupItem key={partner.id} value={partner.id} className="flex-1 text-xs">
-                    {partner.name}
-                  </ToggleGroupItem>
+          <div className="space-y-1">
+            <Label htmlFor="paidBy">{t('label.whoPaid', language)}</Label>
+            <Select value={paidBy} onValueChange={setPaidBy}>
+              <SelectTrigger>
+                <SelectValue placeholder={t('placeholder.selectWhoPaid', language)} />
+              </SelectTrigger>
+              <SelectContent>
+                {getPartnerOptions().map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
                 ))}
-              </ToggleGroup>
-            </div>
-          )}
+              </SelectContent>
+            </Select>
+          </div>
 
           <Button
             type="submit"
             className="w-full"
-            disabled={!description.trim() || !amount || (isPartnership && !paidBy)}
+            disabled={!description.trim() || !amount}
           >
             {t('button.addExpense', language)}
           </Button>

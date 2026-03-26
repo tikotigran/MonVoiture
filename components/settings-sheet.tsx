@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Trash2, AlertTriangle } from 'lucide-react'
+import { Trash2, AlertTriangle, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -26,13 +26,15 @@ import {
 } from '@/components/ui/collapsible'
 import { ChevronDown } from 'lucide-react'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
-import type { User } from 'firebase/auth'
+import type { User as FirebaseUser } from 'firebase/auth'
+import type { UserInfo } from '@/lib/types'
 import { t } from '@/lib/translations'
 
 interface SettingsSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  user: User | null
+  user: FirebaseUser | null
+  userInfo?: UserInfo | null
   currency: string
   language: 'ru' | 'fr' | 'hy' | 'en'
   appName: string
@@ -51,6 +53,7 @@ interface SettingsSheetProps {
   onUpdateLanguage: (language: 'ru' | 'fr' | 'hy' | 'en') => void
   onUpdateAppName: (appName: string) => void
   onUpdateTheme: (theme: 'light' | 'dark' | 'system') => void
+  onUpdateUserInfo: (userInfo: UserInfo) => void
   onResetGarage?: () => void
 }
 
@@ -58,6 +61,7 @@ export function SettingsSheet({
   open,
   onOpenChange,
   user,
+  userInfo,
   currency,
   language,
   appName,
@@ -68,10 +72,10 @@ export function SettingsSheet({
   onUpdateLanguage,
   onUpdateAppName,
   onUpdateTheme,
+  onUpdateUserInfo,
   onResetGarage,
 }: SettingsSheetProps) {
   const [tempCurrency, setTempCurrency] = useState(currency)
-  const [tempAppName, setTempAppName] = useState(appName)
   const [showResetDialog, setShowResetDialog] = useState(false)
   const [resetPassword, setResetPassword] = useState('')
   const [resetError, setResetError] = useState('')
@@ -79,18 +83,44 @@ export function SettingsSheet({
   const [openLanguage, setOpenLanguage] = useState(false)
   const [openTheme, setOpenTheme] = useState(false)
   const [openDanger, setOpenDanger] = useState(false)
-  const [openAppName, setOpenAppName] = useState(false)
+  const [openProfile, setOpenProfile] = useState(false)
+  const [tempFirstName, setTempFirstName] = useState(userInfo?.firstName || '')
+  const [tempLastName, setTempLastName] = useState(userInfo?.lastName || '')
+  const [tempEmail, setTempEmail] = useState(userInfo?.email || '')
+  const [tempGarageName, setTempGarageName] = useState(userInfo?.garageName || '')
 
   useEffect(() => {
     if (open) {
       setTempCurrency(currency)
-      setTempAppName(appName)
+      // Always set profile values even if userInfo is undefined
+      setTempFirstName(userInfo?.firstName || '')
+      setTempLastName(userInfo?.lastName || '')
+      setTempEmail(userInfo?.email || '')
+      setTempGarageName(userInfo?.garageName || '')
     }
-  }, [open, currency, appName])
+  }, [open, currency, appName, userInfo])
+
+  const handleSaveProfile = async () => {
+    if (!userInfo || !onUpdateUserInfo) return
+    
+    const updatedUserInfo: UserInfo = {
+      firstName: tempFirstName.trim(),
+      lastName: tempLastName.trim(),
+      email: tempEmail.trim(),
+      garageName: tempGarageName.trim(),
+    }
+    
+    await onUpdateUserInfo(updatedUserInfo)
+    
+    // Also update app name if garage name changed
+    if (tempGarageName.trim() !== userInfo.garageName) {
+      onUpdateAppName(tempGarageName.trim())
+    }
+    
+    setOpenProfile(false)
+  }
 
   const handleResetGarage = async () => {
-    console.log('[settings] Attempting garage reset')
-    
     if (!user) {
       setResetError('Требуется авторизация')
       return
@@ -98,8 +128,6 @@ export function SettingsSheet({
 
     // Simple confirmation - no re-authentication needed
     if (resetPassword.trim() === 'DELETE') {
-      console.log('[settings] Confirmation received, resetting garage')
-      
       onResetGarage?.()
       setShowResetDialog(false)
       setResetPassword('')
@@ -119,16 +147,15 @@ export function SettingsSheet({
     if (tempCurrency !== currency) {
       onUpdateCurrency(tempCurrency)
     }
-    if (tempAppName !== appName) {
-      onUpdateAppName(tempAppName)
-    }
     onOpenChange(false)
   }
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
+      if (tempCurrency !== currency) {
+        onUpdateCurrency(tempCurrency)
+      }
       setTempCurrency(currency)
-      setTempAppName(appName)
     }
     onOpenChange(newOpen)
   }
@@ -199,6 +226,13 @@ export function SettingsSheet({
                     onCheckedChange={(checked) => onUpdateFeatures({ ...features, year: checked })}
                   />
                 </div>
+                <div className="flex items-center justify-between">
+                  <Label>{t('settings.dashboard', language)}</Label>
+                  <Switch
+                    checked={features.dashboard}
+                    onCheckedChange={(checked) => onUpdateFeatures({ ...features, dashboard: checked })}
+                  />
+                </div>
               </div>
             </CollapsibleContent>
           </Collapsible>
@@ -244,23 +278,66 @@ export function SettingsSheet({
             </CollapsibleContent>
           </Collapsible>
 
-          <Collapsible open={openAppName} onOpenChange={setOpenAppName}>
+          {/* Профиль пользователя */}
+          <Collapsible open={openProfile} onOpenChange={setOpenProfile}>
             <CollapsibleTrigger asChild>
               <div className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent cursor-pointer">
-                <Label className="cursor-pointer">{t('settings.appName', language)}</Label>
-                <ChevronDown className={`w-4 h-4 transition-transform ${openAppName ? 'rotate-180' : ''}`} />
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  <Label className="cursor-pointer">{t('settings.profile', language)}</Label>
+                </div>
+                <ChevronDown className={`w-4 h-4 transition-transform ${openProfile ? 'rotate-180' : ''}`} />
               </div>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="appName">{t('settings.appName', language)}</Label>
-                <Input
-                  id="appName"
-                  value={tempAppName}
-                  onChange={(e) => setTempAppName(e.target.value)}
-                  placeholder={t('settings.appNameDesc', language)}
-                />
-                <p className="text-xs text-muted-foreground">{t('settings.appNameDesc', language)}</p>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">{t('label.firstName', language)}</Label>
+                    <Input
+                      id="firstName"
+                      value={tempFirstName}
+                      onChange={(e) => setTempFirstName(e.target.value)}
+                      placeholder={t('placeholder.firstName', language)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">{t('label.lastName', language)}</Label>
+                    <Input
+                      id="lastName"
+                      value={tempLastName}
+                      onChange={(e) => setTempLastName(e.target.value)}
+                      placeholder={t('placeholder.lastName', language)}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">{t('label.email', language)}</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={tempEmail}
+                    onChange={(e) => setTempEmail(e.target.value)}
+                    placeholder={t('placeholder.email', language)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="garageName">{t('label.garageName', language)}</Label>
+                  <Input
+                    id="garageName"
+                    value={tempGarageName}
+                    onChange={(e) => setTempGarageName(e.target.value)}
+                    placeholder={t('placeholder.garageName', language)}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Button onClick={handleSaveProfile} disabled={!onUpdateUserInfo}>
+                  {t('button.save', language)}
+                </Button>
+                <Button variant="outline" onClick={() => setOpenProfile(false)}>
+                  {t('button.cancel', language)}
+                </Button>
               </div>
             </CollapsibleContent>
           </Collapsible>
@@ -275,7 +352,7 @@ export function SettingsSheet({
             <CollapsibleContent className="space-y-4">
               <div className="space-y-2">
                 <Label>{t('settings.theme', language)}</Label>
-                <ThemeToggle />
+                <ThemeToggle theme={theme} onThemeChange={onUpdateTheme} />
               </div>
             </CollapsibleContent>
           </Collapsible>

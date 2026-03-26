@@ -8,7 +8,8 @@ import {
   signOut,
   type User,
 } from 'firebase/auth'
-import { auth } from '@/lib/firebase'
+import { doc, setDoc } from 'firebase/firestore'
+import { auth, db } from '@/lib/firebase'
 
 interface UseAuthResult {
   user: User | null
@@ -39,10 +40,71 @@ export function useAuth(): UseAuthResult {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
       const user = userCredential.user
       
-      // Save additional user info to Firestore
+      // Save user profile to Firestore
       if (user) {
-        // TODO: Save firstName, lastName, garageName to user profile
-        console.log('User registered:', { firstName, lastName, garageName })
+        console.log('Saving user data to Firestore:', { firstName, lastName, garageName })
+        
+        // Сначала сохраняем профиль в settings/userInfo (самое важное)
+        await setDoc(doc(db, 'users', user.uid, 'settings', 'userInfo'), {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          garageName: garageName.trim(),
+          email: email.trim(),
+          createdAt: new Date().toISOString()
+        })
+        console.log('[auth] User profile saved to settings userInfo:', firstName, lastName, garageName)
+        
+        // Затем сохраняем профиль в profile/doc (для совместимости)
+        await setDoc(doc(db, 'users', user.uid, 'profile', 'doc'), {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          garageName: garageName.trim(),
+          email: email.trim(),
+          createdAt: new Date().toISOString()
+        })
+        console.log('[auth] Profile saved to profile collection:', firstName, lastName, garageName)
+        
+        // Initialize settings with garageName and user profile
+        await setDoc(doc(db, 'users', user.uid, 'settings', 'appName'), {
+          appName: garageName.trim()
+        })
+        
+        // Save currency settings
+        await setDoc(doc(db, 'users', user.uid, 'settings', 'currency'), {
+          currency: '€'
+        })
+        
+        // Save language settings  
+        await setDoc(doc(db, 'users', user.uid, 'settings', 'language'), {
+          language: 'ru'
+        })
+        
+        // Save theme settings
+        await setDoc(doc(db, 'users', user.uid, 'settings', 'theme'), {
+          theme: 'system'
+        })
+        
+        // Save features settings
+        await setDoc(doc(db, 'users', user.uid, 'settings', 'features'), {
+          features: {
+            sorting: true,
+            purchaseDate: true,
+            licensePlate: true,
+            search: true,
+            documents: true,
+            km: true,
+            year: true,
+            partnership: true,
+            dashboard: true,
+          }
+        })
+        
+        console.log('[auth] All settings saved for user:', firstName, lastName, garageName)
+        console.log('User data saved successfully')
+        
+        // Проверяем является ли пользователь администратором
+        console.log(`[auth] Checking admin status for: ${email}`)
+        
       }
     } catch (e: any) {
       setError(e?.message || 'Ошибка регистрации')
