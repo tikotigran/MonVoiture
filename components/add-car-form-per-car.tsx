@@ -77,15 +77,15 @@ export function AddCarForm({ open, onOpenChange, onAdd, language = 'ru', feature
       return
     }
     
-    const partnerName = trimmedName || `Партнер ${partners.length + 1}`
+    const partnerName = trimmedName || `Партнер ${carPartners.length + 1}`
     
     const newPartner: CarPartner = {
       id: Date.now().toString(),
       name: partnerName,
       share: 50, // Will be redistributed
     }
-    const updatedPartners = [...partners, newPartner]
-    setPartners(updatedPartners)
+    const updatedPartners = [...carPartners, newPartner]
+    setCarPartners(updatedPartners)
     setNewPartnerName('')
     redistributeShares(updatedPartners)
   }
@@ -101,20 +101,20 @@ export function AddCarForm({ open, onOpenChange, onAdd, language = 'ru', feature
       share: equalShare + (index === 0 ? remainder : 0)
     }))
     
-    setPartners(updatedPartners)
+    setCarPartners(updatedPartners)
   }
 
   const updatePartnerShare = (id: string, share: number) => {
-    setPartners(partners.map(p => 
+    setCarPartners(carPartners.map(p => 
       p.id === id ? { ...p, share: Math.max(0, Math.min(100, share)) } : p
     ))
   }
 
   const removePartner = (id: string) => {
-    if (partners.length <= 1) return // Нельзя удалить последнего партнера
+    if (carPartners.length <= 1) return // Нельзя удалить последнего партнера
   
-    const newPartners = partners.filter(p => p.id !== id)
-    setPartners(newPartners)
+    const newPartners = carPartners.filter(p => p.id !== id)
+    setCarPartners(newPartners)
     if (newPartners.length > 0) {
       redistributeShares(newPartners)
     }
@@ -127,7 +127,7 @@ export function AddCarForm({ open, onOpenChange, onAdd, language = 'ru', feature
 
   const saveEditPartner = () => {
     if (editingPartnerName.trim() && editingPartnerId) {
-      setPartners(partners.map(p => 
+      setCarPartners(carPartners.map(p => 
         p.id === editingPartnerId ? { ...p, name: editingPartnerName.trim() } : p
       ))
       setEditingPartnerId(null)
@@ -148,7 +148,7 @@ export function AddCarForm({ open, onOpenChange, onAdd, language = 'ru', feature
     setPurchasePrice('')
     setPurchaseDate(new Date().toISOString().split('T')[0])
     setIsPartnership(false)
-    setPartners([])
+    setCarPartners([])
     setNewPartnerName('')
     setEditingPartnerId(null)
     setEditingPartnerName('')
@@ -164,8 +164,8 @@ export function AddCarForm({ open, onOpenChange, onAdd, language = 'ru', feature
 
     const partnerShares: { [partnerId: string]: number } = {}
     const partnerNames: { [partnerId: string]: string } = {}
-    if (isPartnership && partners.length > 0) {
-      partners.forEach((partner) => {
+    if (isPartnership && carPartners.length > 0) {
+      carPartners.forEach((partner) => {
         partnerShares[partner.id] = partner.share
         partnerNames[partner.id] = partner.name
       })
@@ -189,7 +189,7 @@ export function AddCarForm({ open, onOpenChange, onAdd, language = 'ru', feature
     onOpenChange(false)
   }
 
-  const totalShares = partners.reduce((sum, p) => sum + p.share, 0)
+  const totalShares = carPartners.reduce((sum, p) => sum + p.share, 0)
   const isSharesValid = totalShares === 100
 
   return (
@@ -311,9 +311,10 @@ export function AddCarForm({ open, onOpenChange, onAdd, language = 'ru', feature
                 </div>
 
                 {/* Список партнеров */}
-                {partners.length > 0 && (
-                  <div className="space-y-3">
-                    {partners.map((partner) => (
+                {carPartners.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Партнеры:</Label>
+                    {carPartners.map((partner) => (
                       <div key={partner.id} className="flex items-center gap-2 p-3 bg-background rounded-lg">
                         {editingPartnerId === partner.id ? (
                           <>
@@ -396,7 +397,7 @@ export function AddCarForm({ open, onOpenChange, onAdd, language = 'ru', feature
             <Button
               type="submit"
               className="w-full"
-              disabled={!name.trim() || (isPartnership && (!isSharesValid || partners.length === 0))}
+              disabled={!name.trim() || (isPartnership && (!isSharesValid || carPartners.length === 0))}
             >
               <Plus className="w-4 h-4 mr-2" />
               {t('button.addCar', language)}

@@ -49,7 +49,6 @@ export default function RootLayout({
       <body className="font-sans antialiased" suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange={false}>
           {children}
-          <PWAInstall />
           <Analytics />
         </ThemeProvider>
       </body>
