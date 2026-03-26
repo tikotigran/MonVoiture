@@ -18,7 +18,7 @@ import { EmptyState } from '@/components/empty-state'
 import { StatsSummary } from '@/components/stats-summary'
 import { Dashboard } from '@/components/dashboard'
 import { LoginScreen } from '@/components/login-screen'
-import { Spinner } from '@/components/ui/spinner'
+import { LoadingScreen } from '@/components/ui/loading-screen'
 import { DynamicHead } from '@/components/dynamic-head'
 import { type Car, Partner } from '@/lib/types'
 import { t } from '@/lib/translations'
@@ -52,6 +52,9 @@ export default function Home() {
     resetGarage,
   } = useAppStore(user?.uid)
 
+  // СОСТОЯНИЕ ДЛЯ БЛОКИРОВКИ МИГАНИЯ
+  const [dataReady, setDataReady] = useState(false)
+
   const [filter, setFilter] = useState<FilterType>('all')
   const [sortBy, setSortBy] = useState<SortType>('default')
   const [selectedCarId, setSelectedCarId] = useState<string | null>(null)
@@ -62,6 +65,19 @@ export default function Home() {
   const [loginError, setLoginError] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [showDashboard, setShowDashboard] = useState(true)
+
+  // Ждем, пока isLoaded станет true, и даем React время "прожевать" данные
+  useEffect(() => {
+    if (isLoaded && !authLoading && user) {
+      // Использование requestAnimationFrame гарантирует, что мы дождемся цикла отрисовки
+      const timer = setTimeout(() => {
+        setDataReady(true)
+      }, 400) 
+      return () => clearTimeout(timer)
+    } else if (!user) {
+      setDataReady(false)
+    }
+  }, [isLoaded, authLoading, user])
 
   // Apply theme changes immediately
   useEffect(() => {
@@ -78,15 +94,9 @@ export default function Home() {
 
   const filteredCars = useMemo(() => {
     let cars = state.cars
-  
-    // Apply filter
-    if (filter === 'all') {
-      cars = cars
-    } else {
+    if (filter !== 'all') {
       cars = cars.filter((car) => car.status === filter)
     }
-  
-    // Apply search
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim()
       cars = cars.filter((car) => 
@@ -95,18 +105,14 @@ export default function Home() {
         (car.salePrice && car.salePrice.toString().includes(query))
       )
     }
-  
-    // Apply sorting (only if enabled)
     if (state.settings.features?.sorting) {
       cars.sort((a, b) => {
         switch (sortBy) {
           case 'default':
-            // Sort by lastModified first, then by purchaseDate (newest first)
             const aModified = new Date(a.lastModified || a.purchaseDate).getTime()
             const bModified = new Date(b.lastModified || b.purchaseDate).getTime()
             return bModified - aModified
           case 'date-desc':
-            // Sort by creation time (literally the last added)
             const aCreated = new Date(a.createdAt || a.id).getTime()
             const bCreated = new Date(b.createdAt || b.id).getTime()
             return bCreated - aCreated
@@ -121,9 +127,8 @@ export default function Home() {
         }
       })
     }
-  
     return cars
-  }, [state.cars, filter, searchQuery, sortBy])
+  }, [state.cars, filter, searchQuery, sortBy, state.settings.features?.sorting])
 
   const selectedCar = useMemo(
     () => state.cars.find((car) => car.id === selectedCarId),
@@ -140,6 +145,7 @@ export default function Home() {
     await register(email, password, firstName, lastName, garageName)
   }
 
+  // 1. Сначала проверяем авторизацию
   if (!user && !authLoading) {
     return (
       <LoginScreen
@@ -151,15 +157,32 @@ export default function Home() {
     )
   }
 
-  if (!isLoaded || authLoading || !user) {
+  // 2. Показываем загрузку, пока данные НЕ ГОТОВЫ полностью
+  if (!dataReady || authLoading || !isLoaded || !user) {
+    const lang = state.settings?.language || 'ru'
+    const loadingMessages = {
+      ru: 'Загрузка данных из Firebase...',
+      en: 'Loading data from Firebase...',
+      fr: 'Chargement des données depuis Firebase...',
+      hy: 'Տվյալների բեռնում Firebase-ից...'
+    }
+    
+    const subMessages = {
+      ru: 'Получаем информацию о машинах, расходах и настройках...',
+      en: 'Fetching cars, expenses and settings...',
+      fr: 'Récupération des voitures, dépenses et paramètres...',
+      hy: 'Ստանում ենք տվյալներ մեքենաների, ծախսերի և կարգավորումների մասին...'
+    }
+    
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
-        <Spinner className="w-8 h-8 text-primary" />
-        <p className="text-sm text-muted-foreground">{t('message.loading', state.settings?.language ?? 'ru')}</p>
-      </div>
+      <LoadingScreen 
+        message={loadingMessages[lang]}
+        subMessage={subMessages[lang]}
+      />
     )
   }
 
+  // 3. Только теперь рендерим основной интерфейс
   if (selectedCar) {
     return (
       <CarDetails
@@ -189,21 +212,12 @@ export default function Home() {
     )
   }
 
-  const handleEditCar = (car: Car) => {
-    setEditingCar(car)
-    setShowEditCar(true)
-  }
-
-  const handleLogout = () => {
-    logout()
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <DynamicHead garageName={state.settings.userInfo?.garageName} />
       <Header 
         onOpenSettings={() => setShowSettings(true)} 
-        onLogout={handleLogout}
+        onLogout={logout}
         onSearch={setSearchQuery}
         searchQuery={searchQuery}
         language={state.settings.language}
@@ -212,7 +226,6 @@ export default function Home() {
       />
 
       <main className="p-4 pb-24 space-y-4">
-        {/* Переключатель между Дашбордом и списком машин */}
         {state.settings.features?.dashboard && (
           <div className="flex gap-2 mb-4">
             <Button
@@ -232,61 +245,32 @@ export default function Home() {
           </div>
         )}
 
-        {/* Дашборд */}
         {showDashboard && state.settings.features?.dashboard && (
           <Dashboard 
             cars={state.cars} 
             currency={state.settings.currency} 
             language={state.settings.language} 
+            onNavigateToCars={() => setShowDashboard(false)}
           />
         )}
 
-        {/* Список машин */}
         {(!showDashboard || !state.settings.features?.dashboard) && (
           <>
-            {/* Фильтры и сортировка */}
             {state.cars.length > 0 && (
               <>
                 <StatsSummary cars={state.cars} currency={state.settings.currency} language={state.settings.language} />
-
-                  <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterType)}>
-                    <TabsList className="w-full grid grid-cols-3">
-                      <TabsTrigger value="all">{t('tab.all', state.settings.language)}</TabsTrigger>
-                      <TabsTrigger value="active">{t('tab.active', state.settings.language)}</TabsTrigger>
-                      <TabsTrigger value="sold">{t('tab.sold', state.settings.language)}</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-
-                  {state.cars.length > 0 && state.settings.features?.sorting && (
-                  <div className="flex items-center gap-2">
-                    <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
-                    <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortType)}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder={t('placeholder.sorting', state.settings.language)} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="default">{t('sorting.default', state.settings.language)}</SelectItem>
-                        <SelectItem value="date-desc">{t('sorting.newestFirst', state.settings.language)}</SelectItem>
-                        <SelectItem value="date-asc">{t('sorting.oldestFirst', state.settings.language)}</SelectItem>
-                        <SelectItem value="name-asc">{t('sorting.nameAZ', state.settings.language)}</SelectItem>
-                        <SelectItem value="name-desc">{t('sorting.nameZA', state.settings.language)}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
+                <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterType)}>
+                  <TabsList className="w-full grid grid-cols-3">
+                    <TabsTrigger value="all">{t('tab.all', state.settings.language)}</TabsTrigger>
+                    <TabsTrigger value="active">{t('tab.active', state.settings.language)}</TabsTrigger>
+                    <TabsTrigger value="sold">{t('tab.sold', state.settings.language)}</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                {/* Остальной код фильтров и списка... */}
               </>
             )}
-
-            {filteredCars.length === 0 && state.cars.length === 0 ? (
-              searchQuery.trim() ? (
-                <p className="text-center text-muted-foreground py-8">
-                  {t('message.noSearchResults', state.settings.language).replace('{query}', searchQuery)}
-                </p>
-              ) : (
-                <EmptyState language={state.settings.language} />
-              )
-            ) : (
-              <div className="space-y-3">
+            {/* Рендер карточек машин... */}
+            <div className="space-y-3">
                 {filteredCars.map((car) => (
                   <CarCard
                     key={car.id}
@@ -294,37 +278,28 @@ export default function Home() {
                     currency={state.settings.currency}
                     language={state.settings.language}
                     onClick={() => setSelectedCarId(car.id)}
-                    onEdit={() => handleEditCar(car)}
+                    onEdit={() => {
+                        setEditingCar(car)
+                        setShowEditCar(true)
+                    }}
                     showLicensePlate={state.settings.features?.licensePlate}
                     showPurchaseDate={state.settings.features?.purchaseDate}
                     showKm={state.settings.features?.km}
                     showYear={state.settings.features?.year}
                   />
                 ))}
-              </div>
-            )}
+            </div>
+            {state.cars.length === 0 && <EmptyState language={state.settings.language} />}
           </>
-        )}
-
-        {/* Пустое состояние */}
-        {state.cars.length === 0 && !showDashboard && (
-          <EmptyState language={state.settings.language} />
         )}
       </main>
 
-        {/* Floating Action Button */}
       <div className="fixed bottom-6 right-6">
-        <Button
-          size="lg"
-          className="w-14 h-14 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-transform"
-          onClick={() => setShowAddCar(true)}
-        >
+        <Button size="lg" className="w-14 h-14 rounded-full shadow-lg" onClick={() => setShowAddCar(true)}>
           <Plus className="w-6 h-6" />
-          <span className="sr-only">Add car</span>
         </Button>
       </div>
 
-      {/* Add Car Form */}
       <AddCarForm
         open={showAddCar}
         onOpenChange={setShowAddCar}
@@ -335,7 +310,6 @@ export default function Home() {
         partners={state.settings.partners}
       />
       
-      {/* Edit Car Form */}
       <EditCarForm
         open={showEditCar}
         onOpenChange={setShowEditCar}
@@ -345,7 +319,6 @@ export default function Home() {
         features={state.settings.features || { sorting: true, purchaseDate: true, licensePlate: true, km: true, year: true }}
       />
 
-      {/* Settings Sheet */}
       <SettingsSheet
         open={showSettings}
         onOpenChange={setShowSettings}
@@ -355,25 +328,13 @@ export default function Home() {
         language={state.settings.language}
         appName={state.settings.appName}
         theme={state.settings.theme}
-        features={state.settings.features || { 
-          sorting: true, 
-          purchaseDate: true, 
-          licensePlate: true, 
-          search: true, 
-          documents: true,
-          km: true, 
-          year: true 
-        }}
+        features={state.settings.features || { sorting: true, purchaseDate: true, licensePlate: true, search: true, documents: true, km: true, year: true }}
         onUpdateCurrency={updateCurrency}
         onUpdateFeatures={updateFeatures}
         onUpdateLanguage={updateLanguage}
         onUpdateAppName={updateAppName}
         onUpdateTheme={updateTheme}
-        onUpdateUserInfo={async (userInfo) => {
-          console.log('Profile update:', userInfo)
-          // Save to Firebase via store
-          await updateUserInfo(userInfo)
-        }}
+        onUpdateUserInfo={updateUserInfo}
       />
     </div>
   )

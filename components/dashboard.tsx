@@ -10,9 +10,10 @@ interface DashboardProps {
   cars: Car[]
   currency: string
   language?: 'ru' | 'fr' | 'hy' | 'en'
+  onNavigateToCars?: () => void
 }
 
-export function Dashboard({ cars, currency, language = 'ru' }: DashboardProps) {
+export function Dashboard({ cars, currency, language = 'ru', onNavigateToCars }: DashboardProps) {
   const soldCars = cars.filter(car => car.status === 'sold')
   const activeCars = cars.filter(car => car.status === 'active')
   
@@ -146,7 +147,19 @@ export function Dashboard({ cars, currency, language = 'ru' }: DashboardProps) {
       {/* Основная статистика */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
-          <Card key={index} className="border-0 shadow-sm">
+          <Card 
+            key={index} 
+            className={`border-0 shadow-sm transition-all duration-200 hover:shadow-md ${
+              stat.title === t('dashboard.totalCars', language) && onNavigateToCars 
+                ? 'cursor-pointer hover:scale-105' 
+                : ''
+            }`}
+            onClick={() => {
+              if (stat.title === t('dashboard.totalCars', language) && onNavigateToCars) {
+                onNavigateToCars()
+              }
+            }}
+          >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
