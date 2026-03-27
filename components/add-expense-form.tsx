@@ -18,7 +18,7 @@ import { t } from '@/lib/translations'
 interface AddExpenseFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onAdd: (expense: Omit<Expense, 'id'>) => void
+  onAdd: (expense: Omit<Expense, 'id'>) => Promise<void>
   language?: 'ru' | 'fr' | 'hy' | 'en'
   car?: Car
   userInfo?: UserInfo
@@ -44,11 +44,11 @@ export function AddExpenseForm({
     setPaidBy(car?.partnerNames && Object.keys(car.partnerNames).filter(id => id !== 'me').length > 0 ? null : 'me')
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!description.trim() || !amount || !paidBy) return
 
-    onAdd({
+    await onAdd({
       description: description.trim(),
       amount: parseFloat(amount),
       category: 'other',
