@@ -56,7 +56,7 @@ interface CarDetailsProps {
   showKm: boolean
   showYear: boolean
   onBack: () => void
-  onAddExpense: (expense: Omit<Expense, 'id'>) => void
+  onAddExpense: (expense: Omit<Expense, 'id'>) => Promise<void>
   onUpdateExpense: (expenseId: string, updates: Partial<Expense>) => void
   onDeleteExpense: (expenseId: string) => void
   onSell: (price: number, saleDate: string) => Promise<void>
@@ -383,7 +383,24 @@ export function CarDetails({
                   {sortedExpenses.map((expense) => (
                     <ContextMenu key={expense.id}>
                       <ContextMenuTrigger>
-                        <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg cursor-pointer active:bg-secondary/50 transition-colors"
+                        <div 
+                          className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg cursor-pointer active:bg-secondary/50 transition-colors"
+                          onTouchStart={(e) => e.preventDefault()}
+                          onContextMenu={(e) => e.preventDefault()}
+                          onClick={() => {
+                            // For mobile devices, show a simple edit/delete dialog
+                            if (window.innerWidth < 768) {
+                              const action = window.confirm(
+                                `${t('message.editOrDelete', language)}\n\n${expense.description}\n${formatCurrency(expense.amount, currency, language)}\n\nOK = ${t('button.edit', language)}\nCancel = ${t('button.delete', language)}`
+                              );
+                              if (action) {
+                                handleEditExpense(expense);
+                              } else {
+                                onDeleteExpense(expense.id);
+                              }
+                            }
+                          }}
+                          style={{ WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}
                         >
                           <div className="flex items-center gap-3 flex-1">
                             {/* Payer initial icon */}
