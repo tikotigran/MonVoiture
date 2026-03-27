@@ -126,6 +126,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'message.noExpenses': 'Нет расходов',
     'message.noSearchResults': 'Нет результатов по запросу "{query}"',
     'message.carNotSold': 'Автомобиль ещё не продан. Информация о прибыли появится после продажи.',
+    'message.noChecklistItems': 'Нет элементов чек-листа',
 
     // Categories
     'category.parts': 'Запчасти',
@@ -361,6 +362,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'message.noExpenses': 'No expenses',
     'message.noSearchResults': 'No results for "{query}"',
     'message.carNotSold': 'Car not sold yet. Profit information will appear after sale.',
+    'message.noChecklistItems': 'No checklist items',
 
     // Categories
     'category.parts': 'Parts',
@@ -596,6 +598,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'message.noExpenses': 'Aucune dépense',
     'message.noSearchResults': 'Aucun résultat pour "{query}"',
     'message.carNotSold': 'Voiture pas encore vendue. Les informations de profit apparaîtront après la vente.',
+    'message.noChecklistItems': 'Aucun élément de liste de contrôle',
 
     // Categories
     'category.parts': 'Pièces',
@@ -817,6 +820,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'message.noExpenses': 'Ծախսեր չկան',
     'message.noSearchResults': 'Արդյունքներ չկան "{query}" հարցման համար',
     'message.carNotSold': 'Ավտոմոբիլը դեռ չի վաճառվել։ Շահույթի տեղեկատվությունը կհայտնվի վաճառքից հետո։',
+    'message.noChecklistItems': 'Չեկ-լիստի տարրեր չկան',
 
     // Categories
     'category.parts': 'Պահեստամասեր',

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import type { AppState, Car, Expense, Partner, Document, AppSettings, ChecklistItem, UserInfo } from './types'
 import { generateId } from './format'
 import { db } from './firebase'
-import { doc, getDoc, setDoc, collection, getDocs, writeBatch, deleteDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc, collection, getDocs, writeBatch, deleteDoc, updateDoc } from 'firebase/firestore'
 
 const defaultState: AppState = {
   cars: [],
@@ -639,7 +639,8 @@ export function useAppStore(userId?: string | null) {
     }
   }, [userId, db, state.cars])
 
-  const sellCar = useCallback((carId: string, salePrice: number, saleDate?: string) => {
+  const sellCar = useCallback(async (carId: string, salePrice: number, saleDate?: string) => {
+    // Update local state first
     setState((prev) => ({
       ...prev,
       cars: prev.cars.map((car) =>
@@ -653,24 +654,57 @@ export function useAppStore(userId?: string | null) {
           : car
       ),
     }))
-  }, [])
 
-  const updateSoldCar = useCallback((carId: string, salePrice: number, saleDate: string) => {
+    // Save to Firebase
+    if (db && userId) {
+      try {
+        const carRef = doc(db, 'users', userId, 'cars', carId)
+        await updateDoc(carRef, {
+          status: 'sold',
+          salePrice,
+          saleDate: saleDate || new Date().toISOString().split('T')[0],
+        })
+        console.log('[store] Car sold and saved to Firebase:', carId)
+      } catch (error) {
+        console.error('[store] Failed to save sold car to Firebase:', error)
+      }
+    }
+  }, [db, userId])
+
+  const updateSoldCar = useCallback(async (carId: string, salePrice: number, saleDate: string) => {
+    // Update local state first
     setState((prev) => ({
       ...prev,
       cars: prev.cars.map((car) =>
         car.id === carId
           ? {
               ...car,
+              status: 'sold',
               salePrice,
               saleDate,
             }
           : car
       ),
     }))
-  }, [])
 
-  const returnToSale = useCallback((carId: string) => {
+    // Save to Firebase
+    if (db && userId) {
+      try {
+        const carRef = doc(db, 'users', userId, 'cars', carId)
+        await updateDoc(carRef, {
+          status: 'sold',
+          salePrice,
+          saleDate,
+        })
+        console.log('[store] Car marked as sold:', carId)
+      } catch (error) {
+        console.error('[store] Failed to update car as sold:', error)
+      }
+    }
+  }, [db, userId])
+
+  const returnToSale = useCallback(async (carId: string) => {
+    // Update local state first
     setState((prev) => ({
       ...prev,
       cars: prev.cars.map((car) =>
@@ -684,7 +718,22 @@ export function useAppStore(userId?: string | null) {
           : car
       ),
     }))
-  }, [])
+
+    // Save to Firebase
+    if (db && userId) {
+      try {
+        const carRef = doc(db, 'users', userId, 'cars', carId)
+        await updateDoc(carRef, {
+          salePrice: null,
+          saleDate: null,
+          status: 'active',
+        })
+        console.log('[store] Car returned to sale:', carId)
+      } catch (error) {
+        console.error('[store] Failed to return car to sale:', error)
+      }
+    }
+  }, [db, userId])
 
   const updateCurrency = useCallback((currency: string) => {
     setState((prev) => ({

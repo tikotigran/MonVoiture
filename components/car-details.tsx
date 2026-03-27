@@ -59,8 +59,8 @@ interface CarDetailsProps {
   onAddExpense: (expense: Omit<Expense, 'id'>) => void
   onUpdateExpense: (expenseId: string, updates: Partial<Expense>) => void
   onDeleteExpense: (expenseId: string) => void
-  onSell: (price: number, saleDate: string) => void
-  onUpdateSoldCar: (price: number, saleDate: string) => void
+  onSell: (price: number, saleDate: string) => Promise<void>
+  onUpdateSoldCar: (price: number, saleDate: string) => Promise<void>
   onReturnToSale: () => void
   onAddDocument: (document: Omit<Document, 'id' | 'uploadDate'>) => void
   onDeleteDocument: (documentId: string) => void
@@ -121,7 +121,6 @@ export function CarDetails({
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
   const [editDescription, setEditDescription] = useState('')
   const [editAmount, setEditAmount] = useState('')
-  const [editCategory, setEditCategory] = useState<Expense['category']>('other')
   const [editDate, setEditDate] = useState('')
   const [editPaidBy, setEditPaidBy] = useState<string>('me')
   const [salePrice, setSalePrice] = useState('')
@@ -133,7 +132,6 @@ export function CarDetails({
     setEditingExpense(expense)
     setEditDescription(expense.description)
     setEditAmount(expense.amount.toString())
-    setEditCategory(expense.category)
     setEditDate(expense.date)
     setEditPaidBy(expense.paidBy || 'me')
     setShowEditExpense(true)
@@ -144,7 +142,7 @@ export function CarDetails({
     onUpdateExpense(editingExpense.id, {
       description: editDescription,
       amount: parseFloat(editAmount),
-      category: editCategory,
+      category: 'other', // Default category
       date: editDate,
       paidBy: editPaidBy,
     })
@@ -152,19 +150,23 @@ export function CarDetails({
     setEditingExpense(null)
   }
 
-  const handleSell = () => {
+  const handleSell = async () => {
     if (!salePrice) return
-    onSell(parseFloat(salePrice), saleDate)
+    await onSell(parseFloat(salePrice), saleDate)
     setSalePrice('')
     setSaleDate(new Date().toISOString().split('T')[0])
     setShowSellSheet(false)
+    // Переключаемся на вкладку "Прибыль" после продажи
+    setActiveTab('profit')
   }
 
-  const handleUpdateSoldCar = () => {
+  const handleUpdateSoldCar = async () => {
     if (!salePrice || !onUpdateSoldCar) return
-    onUpdateSoldCar(parseFloat(salePrice), saleDate)
+    await onUpdateSoldCar(parseFloat(salePrice), saleDate)
     setSalePrice(car.salePrice?.toString() || '')
     setShowSellSheet(false)
+    // Переключаемся на вкладку "Прибыль" после обновления
+    setActiveTab('profit')
   }
 
   const totalExpenses = car.expenses.reduce((sum, e) => sum + e.amount, 0)
@@ -207,6 +209,12 @@ export function CarDetails({
   const sortedExpenses = car.expenses
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .filter(expense => {
+      // If no partners exist, show all expenses (they're all mine anyway)
+      if (!car?.partnerNames || Object.keys(car.partnerNames).filter(id => id !== 'me').length === 0) {
+        return true
+      }
+      
+      // If partners exist, use filter logic
       if (expenseFilter === 'all') return true
       if (expenseFilter === 'me') return !expense.paidBy || expense.paidBy === 'me'
       if (expenseFilter === 'partner') return expense.paidBy && expense.paidBy !== 'me'
@@ -349,20 +357,22 @@ export function CarDetails({
                 )}
               </div>
 
-              {/* Filter tabs */}
-              <Tabs value={expenseFilter} onValueChange={setExpenseFilter}>
-                <TabsList className="w-full">
-                  <TabsTrigger value="all" className="flex-1">
-                    ВСЕ
-                  </TabsTrigger>
-                  <TabsTrigger value="me" className="flex-1">
-                    {userInfo?.firstName || 'МОЁ ИМЯ'}
-                  </TabsTrigger>
-                  <TabsTrigger value="partner" className="flex-1">
-                    {car?.partnerNames ? Object.values(car.partnerNames).find(name => name !== userInfo?.firstName) || 'ПАРТНЕР' : 'ПАРТНЕР'}
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+              {/* Filter tabs - only show if partners exist */}
+              {car?.partnerNames && Object.keys(car.partnerNames).filter(id => id !== 'me').length > 0 && (
+                <Tabs value={expenseFilter} onValueChange={setExpenseFilter}>
+                  <TabsList className="w-full">
+                    <TabsTrigger value="all" className="flex-1">
+                      ВСЕ
+                    </TabsTrigger>
+                    <TabsTrigger value="me" className="flex-1">
+                      {userInfo?.firstName || 'МОЁ ИМЯ'}
+                    </TabsTrigger>
+                    <TabsTrigger value="partner" className="flex-1">
+                      {car?.partnerNames ? Object.values(car.partnerNames).find(name => name !== userInfo?.firstName) || 'ПАРТНЕР' : 'ПАРТНЕР'}
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              )}
 
                             {sortedExpenses.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-6">
@@ -447,7 +457,7 @@ export function CarDetails({
                         <div className="flex justify-between p-3 bg-secondary/30 rounded-lg">
                           <span className="text-muted-foreground">{t('label.purchasePrice', language)}</span>
                           <span className="font-medium">
-                            {formatCurrency(car.salePrice ? car.salePrice - totalInvested : 0, currency, language)}
+                            {formatCurrency(car.purchasePrice || 0, currency, language)}
                           </span>
                         </div>
                         <div className="flex justify-between p-3 bg-secondary/30 rounded-lg">
@@ -717,20 +727,6 @@ export function CarDetails({
                 min="0"
                 step="0.01"
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-category">{t('label.category', language)}</Label>
-              <Select value={editCategory} onValueChange={(v) => setEditCategory(v as Expense['category'])}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="parts">{t('category.parts', language)}</SelectItem>
-                  <SelectItem value="repair">{t('category.repair', language)}</SelectItem>
-                  <SelectItem value="documents">{t('category.documents', language)}</SelectItem>
-                  <SelectItem value="other">{t('category.other', language)}</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-date">{t('label.date', language)}</Label>

@@ -12,7 +12,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { Expense, Car, UserInfo } from '@/lib/types'
 import { t } from '@/lib/translations'
 
@@ -35,16 +34,14 @@ export function AddExpenseForm({
 }: AddExpenseFormProps) {
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
-  const [category, setCategory] = useState<Expense['category']>('parts')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [paidBy, setPaidBy] = useState<string | null>(null)
+  const [paidBy, setPaidBy] = useState<string | null>(car?.partnerNames && Object.keys(car.partnerNames).filter(id => id !== 'me').length > 0 ? null : 'me')
 
   const resetForm = () => {
     setDescription('')
     setAmount('')
-    setCategory('parts')
     setDate(new Date().toISOString().split('T')[0])
-    setPaidBy(null)
+    setPaidBy(car?.partnerNames && Object.keys(car.partnerNames).filter(id => id !== 'me').length > 0 ? null : 'me')
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -54,7 +51,7 @@ export function AddExpenseForm({
     onAdd({
       description: description.trim(),
       amount: parseFloat(amount),
-      category,
+      category: 'other',
       date,
       paidBy: paidBy === 'me' ? 'me' : paidBy,
     })
@@ -97,29 +94,6 @@ export function AddExpenseForm({
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="category">{t('label.category', language)}</Label>
-            <ToggleGroup
-              type="single"
-              value={category}
-              onValueChange={(value) => setCategory(value as Expense['category'])}
-              className="w-full grid grid-cols-2 gap-1"
-            >
-              <ToggleGroupItem value="parts" className="flex-1 text-xs">
-                {t('category.parts', language)}
-              </ToggleGroupItem>
-              <ToggleGroupItem value="repair" className="flex-1 text-xs">
-                {t('category.repair', language)}
-              </ToggleGroupItem>
-              <ToggleGroupItem value="documents" className="flex-1 text-xs">
-                {t('category.documents', language)}
-              </ToggleGroupItem>
-              <ToggleGroupItem value="other" className="flex-1 text-xs">
-                {t('category.other', language)}
-              </ToggleGroupItem>
-            </ToggleGroup>
-          </div>
-
-          <div className="space-y-1">
             <Label htmlFor="date">{t('label.date', language)}</Label>
             <Input
               id="date"
@@ -130,6 +104,7 @@ export function AddExpenseForm({
             />
           </div>
 
+          {(car?.partnerNames && Object.keys(car.partnerNames).filter(id => id !== 'me').length > 0) && (
           <div className="space-y-1">
             <Label>{t('label.whoPaid', language)}</Label>
             <div className="flex gap-2">
@@ -156,6 +131,7 @@ export function AddExpenseForm({
               ))}
             </div>
           </div>
+        )}
 
           <Button
             type="submit"
