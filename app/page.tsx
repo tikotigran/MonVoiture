@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
-import { Plus, ArrowUpDown } from 'lucide-react'
+import { Plus, ArrowUpDown, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAppStore } from '@/lib/store'
@@ -97,7 +98,8 @@ export default function Home() {
     if (filter !== 'all') {
       cars = cars.filter((car) => car.status === filter)
     }
-    if (searchQuery.trim()) {
+    // Применяем поиск только если функция включена в настройках
+    if (state.settings.features?.search && searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim()
       cars = cars.filter((car) => 
         car.name.toLowerCase().includes(query) ||
@@ -128,7 +130,7 @@ export default function Home() {
       })
     }
     return cars
-  }, [state.cars, filter, searchQuery, sortBy, state.settings.features?.sorting])
+  }, [state.cars, filter, searchQuery, sortBy, state.settings.features?.sorting, state.settings.features?.search])
 
   const selectedCar = useMemo(
     () => state.cars.find((car) => car.id === selectedCarId),
@@ -222,7 +224,7 @@ export default function Home() {
         searchQuery={searchQuery}
         language={state.settings.language}
         appName={state.settings.userInfo?.garageName || state.settings.appName}
-        showSearch={state.settings.features?.search}
+        showSearch={false}  // Отключаем поиск в header
       />
 
       <main className="p-4 pb-24 space-y-4">
@@ -259,6 +261,20 @@ export default function Home() {
             {state.cars.length > 0 && (
               <>
                 <StatsSummary cars={state.cars} currency={state.settings.currency} language={state.settings.language} />
+                
+                {/* Поиск над вкладками - только если включен в настройках */}
+                {state.settings.features?.search && (
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder={t('placeholder.searchCars', state.settings.language)}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 w-full bg-background"
+                    />
+                  </div>
+                )}
+
                 <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterType)}>
                   <TabsList className="w-full grid grid-cols-3">
                     <TabsTrigger value="all">{t('tab.all', state.settings.language)}</TabsTrigger>
