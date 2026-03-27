@@ -49,7 +49,7 @@ export function CarCard({ car, currency, language = 'ru', onClick, onEdit, showL
     }
   }
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault()
     if (pressTimer) {
       clearTimeout(pressTimer)
@@ -69,12 +69,30 @@ export function CarCard({ car, currency, language = 'ru', onClick, onEdit, showL
     setIsLongPress(false)
   }
 
+  const handleTouchStart = () => {
+    setIsLongPress(false)
+    const timer = setTimeout(() => {
+      setIsLongPress(true)
+      if (onEdit) onEdit()
+    }, 500) // 500ms для долгого нажатия
+    setPressTimer(timer)
+  }
+
+  const handleTouchEnd = () => {
+    if (pressTimer) {
+      clearTimeout(pressTimer)
+      setPressTimer(null)
+    }
+  }
+
   return (
     <Card
       className="cursor-pointer transition-all hover:bg-secondary/50 active:scale-[0.98]"
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
       onClick={handleClick}
     >
       <CardContent className="p-4">
