@@ -63,6 +63,8 @@ export function AdminPanel() {
   const [notificationMessage, setNotificationMessage] = useState('')
   const [useMockMode, setUseMockMode] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [debugLogs, setDebugLogs] = useState<string[]>([])
+  const [showDebug, setShowDebug] = useState(true)
 
   // Функции управления пользователями
   const handleDeleteUser = async (userId: string, userEmail: string) => {
@@ -350,20 +352,42 @@ export function AdminPanel() {
   // Load data from Firebase or Mock service
   useEffect(() => {
     const loadData = async () => {
+      const logs: string[] = []
+      const addLog = (msg: string) => {
+        logs.push(`${new Date().toLocaleTimeString()}: ${msg}`)
+        setDebugLogs([...logs])
+      }
+      
       try {
         setLoading(true)
         setError(null)
+        setDebugLogs([])
 
         const service = useMockMode ? mockAdminService : usersOnlyAdminService
+        addLog(`Using ${useMockMode ? 'MOCK' : 'FIREBASE'} service`)
 
-        // Загружаем все данные параллельно
-        const [statsData, usersData, carsData, brandsData, categoriesData] = await Promise.all([
-          service.getStats(),
-          service.getUsers(),
-          service.getCars(),
-          service.getPopularBrands(),
-          service.getCategoryExpenses()
-        ])
+        // Загружаем данные по одному для отладки
+        addLog('Loading stats...')
+        const statsData = await service.getStats()
+        addLog(`Stats: ${statsData.totalUsers} users, ${statsData.totalCars} cars`)
+        
+        addLog('Loading users...')
+        const usersData = await service.getUsers()
+        addLog(`Users loaded: ${usersData.length}`)
+        usersData.forEach(u => addLog(`  - User: ${u.email}, cars: ${u.carCount}`))
+        
+        addLog('Loading cars...')
+        const carsData = await service.getCars()
+        addLog(`Cars loaded: ${carsData.length}`)
+        carsData.forEach(c => addLog(`  - Car: ${c.name}, user: ${c.userEmail}`))
+        
+        addLog('Loading brands...')
+        const brandsData = await service.getPopularBrands()
+        addLog(`Brands: ${brandsData.length}`)
+        
+        addLog('Loading categories...')
+        const categoriesData = await service.getCategoryExpenses()
+        addLog(`Categories: ${categoriesData.length}`)
 
         setStats(statsData)
         setUsers(usersData)
@@ -371,15 +395,15 @@ export function AdminPanel() {
         setPopularBrands(brandsData)
         setCategoryExpenses(categoriesData)
 
-        // Данные загружены успешно, даже если они пустые
-        // Это нормально для нового проекта или когда нет данных
-        console.log('✅ Admin panel data loaded successfully')
+        addLog('SUCCESS: All data loaded!')
       } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err)
+        addLog(`ERROR: ${errMsg}`)
         console.error('Error loading admin data:', err)
         if (err instanceof Error && err.message.includes('Missing or insufficient permissions')) {
           setError('Недостаточно прав доступа. Используйте демо-режим для тестирования.')
         } else {
-          setError('Не удалось загрузить данные. Попробуйте позже.')
+          setError(`Не удалось загрузить данные: ${errMsg}`)
         }
       } finally {
         setLoading(false)
@@ -488,6 +512,36 @@ export function AdminPanel() {
             </Button>
           </div>
         </div>
+
+        {/* Debug Panel */}
+        {showDebug && debugLogs.length > 0 && (
+          <Card className="bg-slate-900 text-green-400 font-mono text-sm">
+            <CardHeader className="py-2 px-4 flex flex-row items-center justify-between">
+              <CardTitle className="text-green-400 text-sm">Debug Logs</CardTitle>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowDebug(false)}
+                className="text-slate-400 hover:text-white h-6"
+              >
+                Hide
+              </Button>
+            </CardHeader>
+            <CardContent className="p-4 pt-0 max-h-60 overflow-y-auto">
+              {debugLogs.map((log, i) => (
+                <div key={i} className={log.includes('ERROR') ? 'text-red-400' : log.includes('SUCCESS') ? 'text-green-400' : 'text-slate-300'}>
+                  {log}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+        
+        {!showDebug && (
+          <Button variant="outline" size="sm" onClick={() => setShowDebug(true)}>
+            Show Debug Logs ({debugLogs.length})
+          </Button>
+        )}
 
         {/* Empty data notification */}
         {!useMockMode && stats && stats.totalUsers === 0 && stats.totalCars === 0 && (

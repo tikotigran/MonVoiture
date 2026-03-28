@@ -62,47 +62,49 @@ export class UsersOnlyAdminService {
 
   async getStats(): Promise<AdminStats> {
     try {
-      console.log('[v0] Loading stats from users/{userId}/cars structure...')
+      console.log('[v0] Loading stats using current user...')
       
-      // Получаем всех пользователей из users (корневая коллекция)
-      const usersSnapshot = await getDocs(collection(db, 'users'))
-      console.log(`[v0] Found ${usersSnapshot.docs.length} users in collection`)
+      // Используем текущего авторизованного пользователя
+      const currentUser = auth.currentUser
+      console.log(`[v0] Current user: ${currentUser?.email || 'not logged in'}, uid: ${currentUser?.uid || 'none'}`)
       
-      if (usersSnapshot.docs.length === 0) {
-        console.log('[v0] ERROR: No users found in database')
+      if (!currentUser) {
+        console.log('[v0] No authenticated user found')
+        return {
+          totalUsers: 0, totalCars: 0, totalExpenses: 0, totalRevenue: 0,
+          avgCarPrice: 0, activeUsers: 0, newUsers: 0, inactiveUsers: 0
+        }
       }
 
-      let totalUsers = usersSnapshot.docs.length
+      let totalUsers = 1 // текущий пользователь
       let totalCars = 0
       let totalExpenses = 0
       let totalRevenue = 0
 
-      // Для каждого пользователя получаем его машины из users/{userId}/cars
-      for (const userDoc of usersSnapshot.docs) {
-        const userId = userDoc.id
-        const userData = userDoc.data()
-        console.log(`[v0] Processing user: ${userId}, data:`, userData)
+      // Получаем машины текущего пользователя
+      const userId = currentUser.uid
+      const userCarsSnapshot = await getDocs(collection(db, 'users', userId, 'cars'))
+      console.log(`[v0] User ${userId} has ${userCarsSnapshot.docs.length} cars`)
+      
+      for (const carDoc of userCarsSnapshot.docs) {
+        const carData = carDoc.data()
+        console.log(`[v0] Car: ${carDoc.id}`, carData)
         
-        const userCarsSnapshot = await getDocs(collection(db, 'users', userId, 'cars'))
-        
-        console.log(`[v0] User ${userId} has ${userCarsSnapshot.docs.length} cars`)
-        
-        for (const carDoc of userCarsSnapshot.docs) {
-          const carData = carDoc.data()
-          
-          // Пропускаем удаленные машины
-          if (carData.deleted === true) continue
-          
-          totalCars++
-          
-          // Считаем расходы если они есть в машине
-          if (carData.expenses && Array.isArray(carData.expenses)) {
-            const carExpenses = carData.expenses.reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0)
-            totalExpenses += carExpenses
-          }
-          
-          totalRevenue += (carData.purchasePrice || 0)
+        // Пропускаем удаленные машины
+        if (carData.deleted === true) {
+          console.log(`[v0] Skipping deleted car`)
+          continue
         }
+        
+        totalCars++
+        
+        // Считаем расходы если они есть в машине
+        if (carData.expenses && Array.isArray(carData.expenses)) {
+          const carExpenses = carData.expenses.reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0)
+          totalExpenses += carExpenses
+        }
+        
+        totalRevenue += (carData.purchasePrice || 0)
       }
 
       const stats: AdminStats = {
@@ -126,74 +128,75 @@ export class UsersOnlyAdminService {
 
   async getUsers(): Promise<AdminUser[]> {
     try {
-      console.log('[v0] Loading users from users/{userId} structure...')
+      console.log('[v0] Loading users using current user...')
       
-      // Получаем пользователей из корневой users
-      const usersSnapshot = await getDocs(collection(db, 'users'))
-      console.log(`[v0] getUsers: Found ${usersSnapshot.docs.length} users`)
+      const currentUser = auth.currentUser
+      console.log(`[v0] getUsers: Current user: ${currentUser?.email}, uid: ${currentUser?.uid}`)
       
-      const users: AdminUser[] = []
-
-      for (const userDoc of usersSnapshot.docs) {
-        const userId = userDoc.id
-        const userData = userDoc.data()
-        console.log(`[v0] getUsers: Processing ${userId}`, userData)
-        
-        // Получаем машины пользователя из users/{userId}/cars
-        const userCarsSnapshot = await getDocs(collection(db, 'users', userId, 'cars'))
-        const userCars = userCarsSnapshot.docs
-          .map(doc => ({ id: doc.id, ...doc.data() } as any))
-          .filter(car => car.deleted !== true)
-        
-        // Также пробуем получить профиль из settings/userInfo
-        let profileData: any = {}
-        try {
-          const profileDoc = await getDoc(doc(db, 'users', userId, 'settings', 'userInfo'))
-          if (profileDoc.exists()) {
-            profileData = profileDoc.data()
-          }
-        } catch (e) {
-          console.log(`[v0] No profile for user ${userId}`)
-        }
-        
-        // Считаем статистику
-        let totalExpenses = 0
-        let totalInvested = 0
-        let carsSold = 0
-        let totalProfit = 0
-
-        for (const car of userCars) {
-          // Считаем расходы
-          if (car.expenses && Array.isArray(car.expenses)) {
-            const carExpenses = car.expenses.reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0)
-            totalExpenses += carExpenses
-          }
-          
-          totalInvested += (car.purchasePrice || 0)
-          
-          if (car.status === 'sold' && car.salePrice) {
-            carsSold++
-            totalProfit += (car.salePrice - (car.purchasePrice || 0))
-          }
-        }
-
-        const adminUser: AdminUser = {
-          id: userId,
-          email: userData.email || profileData.email || 'unknown@example.com',
-          firstName: userData.firstName || profileData.firstName || '',
-          lastName: userData.lastName || profileData.lastName || '',
-          garageName: userData.garageName || profileData.garageName || '',
-          createdAt: userData.createdAt || new Date().toISOString(),
-          isActive: userData.isActive !== false,
-          carCount: userCars.length,
-          totalExpenses,
-          totalInvested,
-          carsSold,
-          totalProfit
-        }
-
-        users.push(adminUser)
+      if (!currentUser) {
+        console.log('[v0] No authenticated user')
+        return []
       }
+
+      const userId = currentUser.uid
+      const users: AdminUser[] = []
+      
+      // Получаем машины текущего пользователя
+      const userCarsSnapshot = await getDocs(collection(db, 'users', userId, 'cars'))
+      const userCars = userCarsSnapshot.docs
+        .map(d => ({ id: d.id, ...d.data() } as any))
+        .filter(car => car.deleted !== true)
+      
+      console.log(`[v0] getUsers: Found ${userCars.length} cars for current user`)
+      
+      // Пробуем получить профиль
+      let profileData: any = {}
+      try {
+        const profileDoc = await getDoc(doc(db, 'users', userId, 'settings', 'userInfo'))
+        if (profileDoc.exists()) {
+          profileData = profileDoc.data()
+          console.log(`[v0] getUsers: Profile found:`, profileData)
+        }
+      } catch (e) {
+        console.log(`[v0] No profile for user ${userId}`)
+      }
+      
+      // Считаем статистику
+      let totalExpenses = 0
+      let totalInvested = 0
+      let carsSold = 0
+      let totalProfit = 0
+
+      for (const car of userCars) {
+        if (car.expenses && Array.isArray(car.expenses)) {
+          const carExpenses = car.expenses.reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0)
+          totalExpenses += carExpenses
+        }
+        
+        totalInvested += (car.purchasePrice || 0)
+        
+        if (car.status === 'sold' && car.salePrice) {
+          carsSold++
+          totalProfit += (car.salePrice - (car.purchasePrice || 0))
+        }
+      }
+
+      const adminUser: AdminUser = {
+        id: userId,
+        email: currentUser.email || profileData.email || 'unknown@example.com',
+        firstName: profileData.firstName || '',
+        lastName: profileData.lastName || '',
+        garageName: profileData.garageName || '',
+        createdAt: currentUser.metadata.creationTime || new Date().toISOString(),
+        isActive: true,
+        carCount: userCars.length,
+        totalExpenses,
+        totalInvested,
+        carsSold,
+        totalProfit
+      }
+
+      users.push(adminUser)
 
       console.log(`[v0] Loaded ${users.length} users`)
       return users
@@ -205,78 +208,77 @@ export class UsersOnlyAdminService {
 
   async getCars(): Promise<AdminCar[]> {
     try {
-      console.log('[v0] Loading cars from users/{userId}/cars structure...')
+      console.log('[v0] Loading cars using current user...')
       
-      // Получаем всех пользователей
-      const usersSnapshot = await getDocs(collection(db, 'users'))
-      console.log(`[v0] getCars: Found ${usersSnapshot.docs.length} users`)
+      const currentUser = auth.currentUser
+      console.log(`[v0] getCars: Current user: ${currentUser?.email}, uid: ${currentUser?.uid}`)
       
+      if (!currentUser) {
+        console.log('[v0] No authenticated user')
+        return []
+      }
+
+      const userId = currentUser.uid
       const allCars: AdminCar[] = []
-
-      // Для каждого пользователя получаем его машины
-      for (const userDoc of usersSnapshot.docs) {
-        const userId = userDoc.id
-        const userData = userDoc.data()
-        console.log(`[v0] getCars: Processing user ${userId}`)
+      
+      // Пробуем получить профиль
+      let profileData: any = {}
+      try {
+        const profileDoc = await getDoc(doc(db, 'users', userId, 'settings', 'userInfo'))
+        if (profileDoc.exists()) {
+          profileData = profileDoc.data()
+          console.log(`[v0] getCars: Profile found:`, profileData)
+        }
+      } catch (e) {
+        // ignore
+      }
+      
+      const userEmail = currentUser.email || profileData.email || 'unknown@example.com'
+      const garageName = profileData.garageName || ''
+      
+      // Получаем машины текущего пользователя
+      const userCarsSnapshot = await getDocs(collection(db, 'users', userId, 'cars'))
+      console.log(`[v0] getCars: Found ${userCarsSnapshot.docs.length} cars`)
+      
+      for (const carDoc of userCarsSnapshot.docs) {
+        const carData = carDoc.data() as any
+        console.log(`[v0] getCars: Car ${carDoc.id}:`, carData)
         
-        // Также пробуем получить профиль из settings/userInfo
-        let profileData: any = {}
-        try {
-          const profileDoc = await getDoc(doc(db, 'users', userId, 'settings', 'userInfo'))
-          if (profileDoc.exists()) {
-            profileData = profileDoc.data()
-          }
-        } catch (e) {
-          // ignore
+        // Пропускаем удаленные машины
+        if (carData.deleted === true) {
+          console.log(`[v0] Skipping deleted car ${carDoc.id}`)
+          continue
         }
         
-        const userEmail = userData.email || profileData.email || 'unknown@example.com'
-        const garageName = userData.garageName || profileData.garageName || ''
+        let totalExpenses = 0
+        let expensesCount = 0
         
-        // Получаем машины пользователя
-        const userCarsSnapshot = await getDocs(collection(db, 'users', userId, 'cars'))
-        console.log(`[v0] getCars: User ${userId} has ${userCarsSnapshot.docs.length} cars`)
-        
-        for (const carDoc of userCarsSnapshot.docs) {
-          const carData = carDoc.data() as any
-          console.log(`[v0] getCars: Car ${carDoc.id}:`, carData)
-          
-          // Пропускаем удаленные машины
-          if (carData.deleted === true) {
-            console.log(`[v0] Skipping deleted car ${carDoc.id}`)
-            continue
-          }
-          
-          let totalExpenses = 0
-          let expensesCount = 0
-          
-          if (carData.expenses && Array.isArray(carData.expenses)) {
-            expensesCount = carData.expenses.length
-            totalExpenses = carData.expenses.reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0)
-          }
-
-          const profit = carData.status === 'sold' && carData.salePrice 
-            ? carData.salePrice - (carData.purchasePrice || 0)
-            : undefined
-
-          const adminCar: AdminCar = {
-            id: carDoc.id,
-            userId: userId,
-            userEmail,
-            garageName,
-            name: carData.name || 'Unknown Car',
-            purchasePrice: carData.purchasePrice || 0,
-            salePrice: carData.salePrice,
-            status: carData.status || 'active',
-            createdAt: carData.createdAt instanceof Date ? carData.createdAt.toISOString() : carData.createdAt || '',
-            profit,
-            expensesCount,
-            totalExpenses
-          }
-
-          allCars.push(adminCar)
-          console.log(`[v0] Added car: ${adminCar.name} (total: ${allCars.length})`)
+        if (carData.expenses && Array.isArray(carData.expenses)) {
+          expensesCount = carData.expenses.length
+          totalExpenses = carData.expenses.reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0)
         }
+
+        const profit = carData.status === 'sold' && carData.salePrice 
+          ? carData.salePrice - (carData.purchasePrice || 0)
+          : undefined
+
+        const adminCar: AdminCar = {
+          id: carDoc.id,
+          userId: userId,
+          userEmail,
+          garageName,
+          name: carData.name || 'Unknown Car',
+          purchasePrice: carData.purchasePrice || 0,
+          salePrice: carData.salePrice,
+          status: carData.status || 'active',
+          createdAt: carData.createdAt instanceof Date ? carData.createdAt.toISOString() : carData.createdAt || '',
+          profit,
+          expensesCount,
+          totalExpenses
+        }
+
+        allCars.push(adminCar)
+        console.log(`[v0] Added car: ${adminCar.name} (total: ${allCars.length})`)
       }
 
       console.log(`[v0] FINAL: Loaded ${allCars.length} cars total`)
