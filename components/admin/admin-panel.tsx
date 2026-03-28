@@ -27,11 +27,13 @@ import {
   Mail,
   Calendar,
   Activity,
-  Loader2
+  Loader2,
+  User
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/format'
 import { usersOnlyAdminService, type AdminStats, type AdminUser, type AdminCar, type PopularBrand, type CategoryExpense } from '@/lib/admin-service-users-only'
 import { mockAdminService } from '@/lib/admin-service-mock'
+import { UserDetailModal } from './user-detail-modal'
 import '@/lib/create-test-data' // Добавляем импорт для создания тестовых данных
 import '@/lib/check-firebase-auth' // Добавляем импорт для проверки Firebase
 import '@/lib/check-firebase-config' // Добавляем импорт для проверки конфигурации
@@ -65,6 +67,8 @@ export function AdminPanel() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [debugLogs, setDebugLogs] = useState<string[]>([])
   const [showDebug, setShowDebug] = useState(true)
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null)
+  const [showUserModal, setShowUserModal] = useState(false)
 
   // Функции управления пользователями
   const handleDeleteUser = async (userId: string, userEmail: string) => {
@@ -695,8 +699,14 @@ export function AdminPanel() {
               <CardContent>
                 <div className="space-y-4">
                   {filteredUsers.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center gap-4">
+                    <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+                      <div 
+                        className="flex items-center gap-4 cursor-pointer flex-1"
+                        onClick={() => {
+                          setSelectedUser(user)
+                          setShowUserModal(true)
+                        }}
+                      >
                         <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-medium">
                           {(user.firstName?.charAt(0) || 'U')}{(user.lastName?.charAt(0) || '')}
                         </div>
@@ -704,7 +714,7 @@ export function AdminPanel() {
                           <div className="font-medium">{user.firstName || 'Пользователь'} {user.lastName || ''}</div>
                           <div className="text-sm text-muted-foreground">{user.email}</div>
                           <div className="text-xs text-muted-foreground">
-                            {user.garageName || 'Без названия'} • {user.carCount} машин • {formatCurrency(user.totalExpenses, 'EUR')}
+                            {user.garageName || 'Без названия'} | {user.carCount} машин | {formatCurrency(user.totalExpenses, 'EUR')}
                           </div>
                         </div>
                       </div>
@@ -715,6 +725,17 @@ export function AdminPanel() {
                         <Badge variant="outline">
                           {new Date(user.createdAt).toLocaleDateString()}
                         </Badge>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedUser(user)
+                            setShowUserModal(true)
+                          }}
+                          title="Подробнее"
+                        >
+                          <User className="w-4 h-4" />
+                        </Button>
                         <Button 
                           variant="outline" 
                           size="sm"
@@ -1179,6 +1200,16 @@ export function AdminPanel() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* User Detail Modal */}
+      <UserDetailModal 
+        user={selectedUser}
+        open={showUserModal}
+        onClose={() => {
+          setShowUserModal(false)
+          setSelectedUser(null)
+        }}
+      />
     </div>
   )
 }
