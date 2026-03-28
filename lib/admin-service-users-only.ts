@@ -66,7 +66,11 @@ export class UsersOnlyAdminService {
       
       // Получаем всех пользователей из users (корневая коллекция)
       const usersSnapshot = await getDocs(collection(db, 'users'))
-      console.log(`[v0] Found ${usersSnapshot.docs.length} users`)
+      console.log(`[v0] Found ${usersSnapshot.docs.length} users in collection`)
+      
+      if (usersSnapshot.docs.length === 0) {
+        console.log('[v0] ERROR: No users found in database')
+      }
 
       let totalUsers = usersSnapshot.docs.length
       let totalCars = 0
@@ -76,6 +80,9 @@ export class UsersOnlyAdminService {
       // Для каждого пользователя получаем его машины из users/{userId}/cars
       for (const userDoc of usersSnapshot.docs) {
         const userId = userDoc.id
+        const userData = userDoc.data()
+        console.log(`[v0] Processing user: ${userId}, data:`, userData)
+        
         const userCarsSnapshot = await getDocs(collection(db, 'users', userId, 'cars'))
         
         console.log(`[v0] User ${userId} has ${userCarsSnapshot.docs.length} cars`)
@@ -123,11 +130,14 @@ export class UsersOnlyAdminService {
       
       // Получаем пользователей из корневой users
       const usersSnapshot = await getDocs(collection(db, 'users'))
+      console.log(`[v0] getUsers: Found ${usersSnapshot.docs.length} users`)
+      
       const users: AdminUser[] = []
 
       for (const userDoc of usersSnapshot.docs) {
         const userId = userDoc.id
         const userData = userDoc.data()
+        console.log(`[v0] getUsers: Processing ${userId}`, userData)
         
         // Получаем машины пользователя из users/{userId}/cars
         const userCarsSnapshot = await getDocs(collection(db, 'users', userId, 'cars'))
@@ -199,12 +209,15 @@ export class UsersOnlyAdminService {
       
       // Получаем всех пользователей
       const usersSnapshot = await getDocs(collection(db, 'users'))
+      console.log(`[v0] getCars: Found ${usersSnapshot.docs.length} users`)
+      
       const allCars: AdminCar[] = []
 
       // Для каждого пользователя получаем его машины
       for (const userDoc of usersSnapshot.docs) {
         const userId = userDoc.id
         const userData = userDoc.data()
+        console.log(`[v0] getCars: Processing user ${userId}`)
         
         // Также пробуем получить профиль из settings/userInfo
         let profileData: any = {}
@@ -222,12 +235,17 @@ export class UsersOnlyAdminService {
         
         // Получаем машины пользователя
         const userCarsSnapshot = await getDocs(collection(db, 'users', userId, 'cars'))
+        console.log(`[v0] getCars: User ${userId} has ${userCarsSnapshot.docs.length} cars`)
         
         for (const carDoc of userCarsSnapshot.docs) {
           const carData = carDoc.data() as any
+          console.log(`[v0] getCars: Car ${carDoc.id}:`, carData)
           
           // Пропускаем удаленные машины
-          if (carData.deleted === true) continue
+          if (carData.deleted === true) {
+            console.log(`[v0] Skipping deleted car ${carDoc.id}`)
+            continue
+          }
           
           let totalExpenses = 0
           let expensesCount = 0
@@ -257,10 +275,11 @@ export class UsersOnlyAdminService {
           }
 
           allCars.push(adminCar)
+          console.log(`[v0] Added car: ${adminCar.name} (total: ${allCars.length})`)
         }
       }
 
-      console.log(`[v0] Loaded ${allCars.length} cars`)
+      console.log(`[v0] FINAL: Loaded ${allCars.length} cars total`)
       return allCars
     } catch (error) {
       console.error('[v0] Error getting cars:', error)
