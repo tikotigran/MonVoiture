@@ -371,10 +371,9 @@ export function AdminPanel() {
         setPopularBrands(brandsData)
         setCategoryExpenses(categoriesData)
 
-        // Проверяем если все данные пустые (возможно проблема с правами)
-        if (statsData.totalUsers === 0 && usersData.length === 0 && carsData.length === 0 && !useMockMode) {
-          setError('Нет доступа к данным. Используйте демо-режим для тестирования.')
-        }
+        // Данные загружены успешно, даже если они пустые
+        // Это нормально для нового проекта или когда нет данных
+        console.log('✅ Admin panel data loaded successfully')
       } catch (err) {
         console.error('Error loading admin data:', err)
         if (err instanceof Error && err.message.includes('Missing or insufficient permissions')) {
@@ -473,6 +472,12 @@ export function AdminPanel() {
             )}
           </div>
           <div className="flex gap-2">
+            <Button 
+              variant={useMockMode ? "default" : "outline"}
+              onClick={() => setUseMockMode(!useMockMode)}
+            >
+              {useMockMode ? "Firebase" : "Demo"}
+            </Button>
             <Button variant="outline">
               <Download className="w-4 h-4 mr-2" />
               Экспорт данных
@@ -483,6 +488,31 @@ export function AdminPanel() {
             </Button>
           </div>
         </div>
+
+        {/* Empty data notification */}
+        {!useMockMode && stats && stats.totalUsers === 0 && stats.totalCars === 0 && (
+          <Card className="bg-amber-50 border-amber-200">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-600" />
+                <div>
+                  <p className="font-medium text-amber-800">База данных пуста</p>
+                  <p className="text-sm text-amber-700">
+                    Нет данных в Firebase. Добавьте пользователей и машины или включите демо-режим для тестирования.
+                  </p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setUseMockMode(true)}
+                  className="ml-auto"
+                >
+                  Включить Demo
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Stats Cards */}
         {stats && (
