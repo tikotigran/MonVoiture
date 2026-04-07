@@ -4,8 +4,16 @@ const admin = require('firebase-admin');
 // Инициализация Firebase Admin
 admin.initializeApp();
 
+// CORS middleware
+const cors = require('cors')({origin: true});
+
 // Удаление пользователя из Authentication
 exports.deleteAuthUser = functions.https.onCall(async (data, context) => {
+  // CORS обработка
+  if (context.rawRequest.method === 'OPTIONS') {
+    return { status: 200 };
+  }
+
   const { email } = data;
   
   // Проверка что запрос от админа
@@ -48,6 +56,11 @@ exports.deleteAuthUser = functions.https.onCall(async (data, context) => {
 
 // Проверка существует ли пользователь в Authentication
 exports.checkAuthUser = functions.https.onCall(async (data, context) => {
+  // CORS обработка
+  if (context.rawRequest.method === 'OPTIONS') {
+    return { status: 200 };
+  }
+
   const { email } = data;
   
   if (!context.auth) {
@@ -85,6 +98,11 @@ exports.checkAuthUser = functions.https.onCall(async (data, context) => {
 
 // Получение списка всех пользователей в Authentication
 exports.listAuthUsers = functions.https.onCall(async (data, context) => {
+  // CORS обработка
+  if (context.rawRequest.method === 'OPTIONS') {
+    return { status: 200 };
+  }
+
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Требуется авторизация');
   }
