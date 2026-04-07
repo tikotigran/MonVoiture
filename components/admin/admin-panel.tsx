@@ -429,7 +429,7 @@ export function AdminPanel() {
                 <li>Перейдите в Firestore Database → Rules</li>
                 <li>Скопируйте правила из файла <code>firestore.rules</code></li>
                 <li>Нажмите "Publish"</li>
-                <li>Создайте пользователя admin@monvoiture.com в Authentication</li>
+                <li>Создайте пользователя tikjan1983@gmail.com в Authentication</li>
               </ol>
               <p className="text-xs mt-2">
                 📄 Подробности в файле <code>FIREBASE_SETUP.md</code>

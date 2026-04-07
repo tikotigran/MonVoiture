@@ -9,7 +9,7 @@ class RealAdminService {
       if (userStr) {
         const user = JSON.parse(userStr)
         console.log('Current user:', user)
-        console.log('Is admin?', user.email === 'admin@monvoiture.com')
+        console.log('Is admin?', user.email === 'tikjan1983@gmail.com')
         return user
       }
     }
@@ -19,7 +19,7 @@ class RealAdminService {
   async getStats(): Promise<AdminStats> {
     const currentUser = this.getCurrentUser()
     
-    if (!currentUser || currentUser.email !== 'admin@monvoiture.com') {
+    if (!currentUser || currentUser.email !== 'tikjan1983@gmail.com') {
       console.warn('Access denied: User is not admin', currentUser)
       throw new Error('Access denied: Only admin can access stats')
     }
@@ -107,7 +107,7 @@ class RealAdminService {
   async getUsers(): Promise<AdminUser[]> {
     const currentUser = this.getCurrentUser()
     
-    if (!currentUser || currentUser.email !== 'admin@monvoiture.com') {
+    if (!currentUser || currentUser.email !== 'tikjan1983@gmail.com') {
       console.warn('Access denied: User is not admin', currentUser)
       throw new Error('Access denied: Only admin can access users')
     }
@@ -169,7 +169,7 @@ class RealAdminService {
   async getCars(): Promise<AdminCar[]> {
     const currentUser = this.getCurrentUser()
     
-    if (!currentUser || currentUser.email !== 'admin@monvoiture.com') {
+    if (!currentUser || currentUser.email !== 'tikjan1983@gmail.com') {
       console.warn('Access denied: User is not admin', currentUser)
       throw new Error('Access denied: Only admin can access cars')
     }
@@ -226,7 +226,7 @@ class RealAdminService {
   async getPopularBrands(): Promise<PopularBrand[]> {
     const currentUser = this.getCurrentUser()
     
-    if (!currentUser || currentUser.email !== 'admin@monvoiture.com') {
+    if (!currentUser || currentUser.email !== 'tikjan1983@gmail.com') {
       console.warn('Access denied: User is not admin', currentUser)
       throw new Error('Access denied: Only admin can access analytics')
     }
@@ -260,7 +260,7 @@ class RealAdminService {
   async getCategoryExpenses(): Promise<CategoryExpense[]> {
     const currentUser = this.getCurrentUser()
     
-    if (!currentUser || currentUser.email !== 'admin@monvoiture.com') {
+    if (!currentUser || currentUser.email !== 'tikjan1983@gmail.com') {
       console.warn('Access denied: User is not admin', currentUser)
       throw new Error('Access denied: Only admin can access analytics')
     }
@@ -293,7 +293,7 @@ class RealAdminService {
   async blockUser(userId: string): Promise<void> {
     const currentUser = this.getCurrentUser()
     
-    if (!currentUser || currentUser.email !== 'admin@monvoiture.com') {
+    if (!currentUser || currentUser.email !== 'tikjan1983@gmail.com') {
       console.warn('Access denied: User is not admin', currentUser)
       throw new Error('Access denied: Only admin can block users')
     }
@@ -305,7 +305,7 @@ class RealAdminService {
   async sendNotification(title: string, message: string, onlyActive: boolean = false): Promise<void> {
     const currentUser = this.getCurrentUser()
     
-    if (!currentUser || currentUser.email !== 'admin@monvoiture.com') {
+    if (!currentUser || currentUser.email !== 'tikjan1983@gmail.com') {
       console.warn('Access denied: User is not admin', currentUser)
       throw new Error('Access denied: Only admin can send notifications')
     }
@@ -317,7 +317,7 @@ class RealAdminService {
   async cleanupInactiveUsers(): Promise<number> {
     const currentUser = this.getCurrentUser()
     
-    if (!currentUser || currentUser.email !== 'admin@monvoiture.com') {
+    if (!currentUser || currentUser.email !== 'tikjan1983@gmail.com') {
       console.warn('Access denied: User is not admin', currentUser)
       throw new Error('Access denied: Only admin can cleanup users')
     }

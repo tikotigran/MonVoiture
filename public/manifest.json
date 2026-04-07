@@ -1,7 +1,7 @@
 {
-  "name": "Автоучет",
-  "short_name": "Автоучет",
-  "description": "Учет автомобилей и финансовых операций",
+  "name": "Mon Garage",
+  "short_name": "Mon Garage",
+  "description": "Gestion auto & finances",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

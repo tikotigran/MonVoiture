@@ -98,7 +98,7 @@ export function Header({
             <DropdownMenuContent align="end">
               {/* Admin Panel Link - только для админа */}
               {typeof window !== 'undefined' && localStorage.getItem('user') && 
-               JSON.parse(localStorage.getItem('user') || '{}').email === 'admin@monvoiture.com' && (
+               JSON.parse(localStorage.getItem('user') || '{}').email === 'tikjan1983@gmail.com' && (
                 <DropdownMenuItem onClick={() => window.open('/admin', '_blank')}>
                   <Shield className="w-4 h-4 mr-2" />
                   Админ Панель
