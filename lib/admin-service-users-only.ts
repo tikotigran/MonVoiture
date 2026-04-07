@@ -1,5 +1,7 @@
 import { collection, getDocs, doc, getDoc, writeBatch, deleteDoc, updateDoc, setDoc } from 'firebase/firestore'
 import { db, auth } from '@/lib/firebase'
+import { httpsCallable } from 'firebase/functions'
+import { functions } from '@/lib/firebase'
 
 export interface AdminStats {
   totalUsers: number
@@ -54,6 +56,19 @@ export interface CategoryExpense {
   percentage: number
 }
 
+export interface ListAuthUsersResult {
+  success: boolean
+  users: Array<{
+    uid: string
+    email: string
+    displayName?: string
+    createdAt: string
+    lastSignIn?: string
+    disabled: boolean
+  }>
+  total: number
+}
+
 // Простой сервис который использует только users коллекцию
 export class UsersOnlyAdminService {
   getCurrentUser() {
@@ -72,33 +87,36 @@ export class UsersOnlyAdminService {
     }
 
     try {
-      console.log('📊 Loading stats from correct structure...')
+      console.log('📊 Loading stats from Firebase Auth...')
       
-      // Получаем всех пользователей из users (корневая коллекция)
-      const usersSnapshot = await getDocs(collection(db, 'users'))
-      console.log(`📋 Found ${usersSnapshot.docs.length} users`)
-
-      // Получаем все машины из cars (отдельная корневая коллекция)
+      // Получаем пользователей через Cloud Function
+      const users = await this.getUsers()
+      
+      // Получаем все машины
       const carsSnapshot = await getDocs(collection(db, 'cars'))
-      console.log(`🚗 Found ${carsSnapshot.docs.length} cars`)
-
-      let totalUsers = usersSnapshot.docs.length
-      let totalCars = carsSnapshot.docs.length
+      const allCars = carsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        userId: doc.data().userId,
+        ...(doc.data() as any)
+      }))
+      
+      let totalUsers = users.length
+      let totalCars = allCars.length
       let totalExpenses = 0
       let totalRevenue = 0
+      let activeUsers = 0
+      let inactiveUsers = 0
 
-      // Считаем расходы и доходы из машин
-      for (const carDoc of carsSnapshot.docs) {
-        const carData = carDoc.data()
-        
-        // Считаем расходы если они есть в машине
-        if (carData.expenses && Array.isArray(carData.expenses)) {
-          const carExpenses = carData.expenses.reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0)
-          totalExpenses += carExpenses
+      // Считаем статистику из пользователей
+      users.forEach(user => {
+        totalExpenses += user.totalExpenses || 0
+        totalRevenue += user.totalInvested || 0
+        if (user.isActive) {
+          activeUsers++
+        } else {
+          inactiveUsers++
         }
-        
-        totalRevenue += (carData.purchasePrice || 0)
-      }
+      })
 
       const stats: AdminStats = {
         totalUsers,
@@ -106,9 +124,9 @@ export class UsersOnlyAdminService {
         totalExpenses,
         totalRevenue,
         avgCarPrice: totalCars > 0 ? totalRevenue / totalCars : 0,
-        activeUsers: totalUsers,
-        newUsers: 0,
-        inactiveUsers: 0
+        activeUsers,
+        newUsers: 0, // Будет реализовано позже
+        inactiveUsers
       }
 
       console.log('✅ Stats loaded:', stats)
@@ -128,64 +146,71 @@ export class UsersOnlyAdminService {
     }
 
     try {
-      console.log('👥 Loading users from correct structure...')
+      console.log('👥 Loading users from Firebase Auth...')
       
-      // Получаем пользователей из корневой users
-      const usersSnapshot = await getDocs(collection(db, 'users'))
-      const users: AdminUser[] = []
-
+      // Вызываем Cloud Function для получения пользователей из Auth
+      const listUsers = httpsCallable(functions, 'listAuthUsers')
+      const result = await listUsers() as { data: ListAuthUsersResult }
+      
+      if (!result.data.success) {
+        throw new Error('Failed to get users from Auth')
+      }
+      
+      const authUsers = result.data.users
+      console.log(`📋 Found ${authUsers.length} users in Auth`)
+      
       // Получаем все машины для подсчета статистики
       const carsSnapshot = await getDocs(collection(db, 'cars'))
       const allCars = carsSnapshot.docs.map(doc => ({
         id: doc.id,
+        userId: doc.data().userId,
         ...(doc.data() as any)
       }))
-
-      for (const userDoc of usersSnapshot.docs) {
-        const userId = userDoc.id
-        const userData = userDoc.data()
-        
-        // Считаем машины пользователя
-        const userCars = allCars.filter((car: any) => car.userId === userId)
-        
-        // Считаем статистику
-        let totalExpenses = 0
-        let totalInvested = 0
-        let carsSold = 0
-        let totalProfit = 0
-
-        for (const car of userCars) {
-          // Считаем расходы
-          if (car.expenses && Array.isArray(car.expenses)) {
-            const carExpenses = car.expenses.reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0)
-            totalExpenses += carExpenses
-          }
-          
-          totalInvested += (car.purchasePrice || 0)
-          
-          if (car.status === 'sold' && car.salePrice) {
-            carsSold++
-            totalProfit += (car.salePrice - (car.purchasePrice || 0))
-          }
+      
+      // Создаем Map для быстрого доступа к машинам по userId
+      const carsByUserId = new Map<string, any[]>()
+      allCars.forEach(car => {
+        if (!carsByUserId.has(car.userId)) {
+          carsByUserId.set(car.userId, [])
         }
-
-        const adminUser: AdminUser = {
-          id: userId,
-          email: userData.email || 'unknown@example.com',
-          firstName: userData.firstName || 'Unknown',
-          lastName: userData.lastName || 'User',
-          garageName: userData.garageName || 'Unknown Garage',
-          createdAt: userData.createdAt || new Date().toISOString(),
-          isActive: userData.isActive !== false,
+        carsByUserId.get(car.userId)?.push(car)
+      })
+      
+      const users: AdminUser[] = authUsers.map((authUser: any) => {
+        const userCars = carsByUserId.get(authUser.uid) || []
+        const totalExpenses = userCars.reduce((sum: number, car: any) => {
+          return sum + (car.totalExpenses || 0)
+        }, 0)
+        
+        const totalInvested = userCars.reduce((sum: number, car: any) => {
+          return sum + (car.purchasePrice || 0)
+        }, 0)
+        
+        const carsSold = userCars.filter((car: any) => car.status === 'sold').length
+        
+        const totalProfit = userCars.reduce((sum: number, car: any) => {
+          if (car.status === 'sold' && car.salePrice) {
+            return sum + (car.salePrice - car.purchasePrice - (car.totalExpenses || 0))
+          }
+          return sum
+        }, 0)
+        
+        return {
+          id: authUser.uid,
+          email: authUser.email,
+          firstName: authUser.displayName?.split(' ')[0] || '',
+          lastName: authUser.displayName?.split(' ')[1] || '',
+          garageName: '', // Будет получено из Firestore если нужно
+          createdAt: authUser.createdAt,
+          lastLogin: authUser.lastSignIn,
+          isActive: !authUser.disabled,
           carCount: userCars.length,
           totalExpenses,
           totalInvested,
           carsSold,
           totalProfit
         }
-
-        users.push(adminUser)
-      }
+      })
 
       console.log(`✅ Loaded ${users.length} users`)
       return users
