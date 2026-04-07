@@ -26,20 +26,16 @@ export default function AdminPage() {
     // Проверка авторизации администратора через Firebase auth
     const checkAdminAuth = async () => {
       try {
-        console.log('[v0] Checking admin auth, user:', user?.email)
         if (user && user.email === ADMIN_EMAIL) {
-          console.log('[v0] Admin authenticated:', user.email)
           setIsAuthenticated(true)
         } else if (user) {
-          console.log('[v0] User is not admin:', user.email)
           setLoginError(`Пользователь ${user.email} не является администратором`)
           setIsAuthenticated(false)
         } else {
-          console.log('[v0] No user logged in')
           setIsAuthenticated(false)
         }
       } catch (error) {
-        console.error('[v0] Error checking admin auth:', error)
+        console.error('Error checking admin auth:', error)
         setIsAuthenticated(false)
       } finally {
         setLoading(false)
@@ -64,11 +60,10 @@ export default function AdminPage() {
     
     // Используем Firebase auth для входа
     try {
-      console.log('[v0] Attempting admin login for:', email)
       await login(email, password)
       // Проверка будет в useEffect после обновления user
     } catch (error) {
-      console.error('[v0] Login error:', error)
+      console.error('Login error:', error)
       setLoginError('Ошибка входа: неверные данные')
     }
   }

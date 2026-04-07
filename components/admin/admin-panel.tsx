@@ -372,19 +372,12 @@ export function AdminPanel() {
         setCategoryExpenses(categoriesData)
 
         // Данные загружены успешно - даже если они пустые, это не ошибка
-        // Пустые данные означают что база данных новая или нет записей
-        console.log('[v0] Admin data loaded successfully:', {
-          users: usersData.length,
-          cars: carsData.length,
-          stats: statsData
-        })
       } catch (err) {
-        console.error('[v0] Error loading admin data:', err)
+        console.error('Error loading admin data:', err)
         const errorMessage = err instanceof Error ? err.message : String(err)
-        console.error('[v0] Error details:', errorMessage)
         
         if (errorMessage.includes('Missing or insufficient permissions')) {
-          setError('Недостаточно прав доступа. Проверьте правила Firestore и убедитесь что вы вошли как tikjan1983@gmail.com')
+          setError('Недостаточно прав доступа. Проверьте правила Firestore.')
         } else if (errorMessage.includes('network') || errorMessage.includes('offline')) {
           setError('Ошибка сети. Проверьте подключение к интернету.')
         } else {
