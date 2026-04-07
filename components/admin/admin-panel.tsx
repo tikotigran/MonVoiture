@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { debugFirestoreStructure } from '@/lib/debug-firestore'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -62,7 +61,7 @@ export function AdminPanel() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all')
   const [notificationTitle, setNotificationTitle] = useState('')
   const [notificationMessage, setNotificationMessage] = useState('')
-  const [useMockMode, setUseMockMode] = useState(false)
+  const [useMockMode, setUseMockMode] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
   // Функции управления пользователями
@@ -350,9 +349,6 @@ export function AdminPanel() {
 
   // Load data from Firebase or Mock service
   useEffect(() => {
-    // Debug: Check Firestore structure
-    debugFirestoreStructure().catch(console.error)
-
     const loadData = async () => {
       try {
         setLoading(true)
@@ -382,7 +378,7 @@ export function AdminPanel() {
         if (errorMessage.includes('Missing or insufficient permissions')) {
           setError('Недостаточно прав доступа. Проверьте правила Firestore.')
         } else if (errorMessage.includes('network') || errorMessage.includes('offline')) {
-          setError('Ошибка ��ети. Проверьте подключение к интернету.')
+          setError('Ошибка ����ети. Проверьте подключение к интернету.')
         } else {
           setError(`Ошибка загрузки данных. Используйте демо-режим для тестирования.`)
         }
