@@ -62,11 +62,13 @@ export class UsersOnlyAdminService {
 
   async getStats(): Promise<AdminStats> {
     try {
-      console.log('📊 Loading stats from users/{userId}/cars structure...')
+      console.log('[v0] getStats: Starting to load stats...')
+      console.log('[v0] getStats: db exists:', !!db)
       
       // Получаем всех пользователей (ID документов в коллекции users)
       const usersSnapshot = await getDocs(collection(db, 'users'))
-      console.log(`📋 Found ${usersSnapshot.docs.length} user folders`)
+      console.log('[v0] getStats: Found user folders:', usersSnapshot.docs.length)
+      console.log('[v0] getStats: User IDs:', usersSnapshot.docs.map(d => d.id))
 
       let totalUsers = 0
       let totalCars = 0
@@ -83,12 +85,16 @@ export class UsersOnlyAdminService {
           getDoc(doc(db, 'users', userId, 'settings', 'userInfo'))
         ])
         
+        console.log(`[v0] getStats: User ${userId} - profile exists: ${profileSnap.exists()}, userInfo exists: ${userInfoSnap.exists()}`)
+        
         if (profileSnap.exists() || userInfoSnap.exists()) {
           totalUsers++
+          console.log(`[v0] getStats: User ${userId} counted as real user`)
         }
         
         // Получаем машины пользователя из users/{userId}/cars
         const carsSnapshot = await getDocs(collection(db, 'users', userId, 'cars'))
+        console.log(`[v0] getStats: User ${userId} has ${carsSnapshot.docs.length} cars`)
         
         for (const carDoc of carsSnapshot.docs) {
           const carData = carDoc.data()
@@ -119,10 +125,10 @@ export class UsersOnlyAdminService {
         inactiveUsers: 0
       }
 
-      console.log('✅ Stats loaded:', stats)
+      console.log('[v0] getStats: Final stats:', JSON.stringify(stats))
       return stats
     } catch (error) {
-      console.error('❌ Error getting stats:', error)
+      console.error('[v0] getStats: ERROR:', error)
       throw error
     }
   }

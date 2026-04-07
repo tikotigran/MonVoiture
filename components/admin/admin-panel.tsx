@@ -353,10 +353,13 @@ export function AdminPanel() {
       try {
         setLoading(true)
         setError(null)
+        
+        console.log('[v0] AdminPanel: Starting data load, useMockMode:', useMockMode)
 
         const service = useMockMode ? mockAdminService : usersOnlyAdminService
 
         // Загружаем все данные параллельно
+        console.log('[v0] AdminPanel: Calling service methods...')
         const [statsData, usersData, carsData, brandsData, categoriesData] = await Promise.all([
           service.getStats(),
           service.getUsers(),
@@ -364,6 +367,8 @@ export function AdminPanel() {
           service.getPopularBrands(),
           service.getCategoryExpenses()
         ])
+        
+        console.log('[v0] AdminPanel: Data loaded - stats:', statsData, 'users:', usersData.length, 'cars:', carsData.length)
 
         setStats(statsData)
         setUsers(usersData)
