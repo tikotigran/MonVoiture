@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { debugFirestoreStructure } from '@/lib/debug-firestore'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -349,70 +350,24 @@ export function AdminPanel() {
 
   // Load data from Firebase or Mock service
   useEffect(() => {
+    // Debug: Check Firestore structure
+    debugFirestoreStructure().catch(console.error)
+
     const loadData = async () => {
       try {
         setLoading(true)
         setError(null)
-        
-        console.log('[v0] AdminPanel: useEffect triggered, starting data load')
-        console.log('[v0] AdminPanel: useMockMode =', useMockMode)
 
         const service = useMockMode ? mockAdminService : usersOnlyAdminService
-        console.log('[v0] AdminPanel: Service selected:', service.constructor.name)
 
-        // Загружаем каждый метод отдельно чтобы видеть где ошибка
-        console.log('[v0] AdminPanel: Calling getStats()...')
-        let statsData
-        try {
-          statsData = await service.getStats()
-          console.log('[v0] AdminPanel: getStats() completed:', statsData)
-        } catch (e) {
-          console.error('[v0] AdminPanel: getStats() FAILED:', e)
-          throw e
-        }
-
-        console.log('[v0] AdminPanel: Calling getUsers()...')
-        let usersData
-        try {
-          usersData = await service.getUsers()
-          console.log('[v0] AdminPanel: getUsers() completed:', usersData)
-        } catch (e) {
-          console.error('[v0] AdminPanel: getUsers() FAILED:', e)
-          throw e
-        }
-
-        console.log('[v0] AdminPanel: Calling getCars()...')
-        let carsData
-        try {
-          carsData = await service.getCars()
-          console.log('[v0] AdminPanel: getCars() completed:', carsData)
-        } catch (e) {
-          console.error('[v0] AdminPanel: getCars() FAILED:', e)
-          throw e
-        }
-
-        console.log('[v0] AdminPanel: Calling getPopularBrands()...')
-        let brandsData
-        try {
-          brandsData = await service.getPopularBrands()
-          console.log('[v0] AdminPanel: getPopularBrands() completed:', brandsData)
-        } catch (e) {
-          console.error('[v0] AdminPanel: getPopularBrands() FAILED:', e)
-          throw e
-        }
-
-        console.log('[v0] AdminPanel: Calling getCategoryExpenses()...')
-        let categoriesData
-        try {
-          categoriesData = await service.getCategoryExpenses()
-          console.log('[v0] AdminPanel: getCategoryExpenses() completed:', categoriesData)
-        } catch (e) {
-          console.error('[v0] AdminPanel: getCategoryExpenses() FAILED:', e)
-          throw e
-        }
-        
-        console.log('[v0] AdminPanel: All data loaded successfully!')
-        console.log('[v0] AdminPanel: Summary - users:', usersData?.length, 'cars:', carsData?.length, 'stats:', statsData)
+        // Загружаем все данные параллельно
+        const [statsData, usersData, carsData, brandsData, categoriesData] = await Promise.all([
+          service.getStats(),
+          service.getUsers(),
+          service.getCars(),
+          service.getPopularBrands(),
+          service.getCategoryExpenses()
+        ])
 
         setStats(statsData)
         setUsers(usersData)
@@ -422,25 +377,20 @@ export function AdminPanel() {
 
         // Данные загружены успешно - даже если они пустые, это не ошибка
       } catch (err) {
-        console.error('[v0] AdminPanel: EXCEPTION CAUGHT:', err)
-        console.error('[v0] AdminPanel: Error stack:', err instanceof Error ? err.stack : 'No stack available')
         const errorMessage = err instanceof Error ? err.message : String(err)
-        console.error('[v0] AdminPanel: Error message:', errorMessage)
         
         if (errorMessage.includes('Missing or insufficient permissions')) {
           setError('Недостаточно прав доступа. Проверьте правила Firestore.')
         } else if (errorMessage.includes('network') || errorMessage.includes('offline')) {
           setError('Ошибка сети. Проверьте подключение к интернету.')
         } else {
-          setError(`Ошибка загрузки: ${errorMessage}`)
+          setError(`Ошибка загрузки данных. Используйте демо-режим для тестирования.`)
         }
       } finally {
-        console.log('[v0] AdminPanel: Finally block - setting loading to false')
         setLoading(false)
       }
     }
 
-    console.log('[v0] AdminPanel: useEffect hook executing')
     loadData()
   }, [useMockMode])
 
@@ -556,7 +506,7 @@ export function AdminPanel() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Машины</CardTitle>
+                <CardTitle className="text-sm font-medium">Маш��ны</CardTitle>
                 <Car className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -710,7 +660,7 @@ export function AdminPanel() {
                             size="sm"
                             onClick={() => handleUnblockUser(user.id, user.email)}
                             disabled={actionLoading === user.id}
-                            title="Разблокировать пользователя"
+                            title="Разблокировать пользовате��я"
                           >
                             {actionLoading === user.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                           </Button>
