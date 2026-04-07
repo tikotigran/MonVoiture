@@ -57,10 +57,20 @@ export interface CategoryExpense {
 // Простой сервис который использует только users коллекцию
 export class UsersOnlyAdminService {
   getCurrentUser() {
-    return auth.currentUser
+    const user = auth.currentUser
+    console.log('Current user:', user)
+    console.log('Is admin?', user?.email === 'tikjan1983@gmail.com')
+    return user
   }
 
   async getStats(): Promise<AdminStats> {
+    const currentUser = this.getCurrentUser()
+    
+    if (!currentUser || currentUser.email !== 'tikjan1983@gmail.com') {
+      console.warn('Access denied: User is not admin', currentUser)
+      throw new Error('Access denied: Only admin can access stats')
+    }
+
     try {
       console.log('📊 Loading stats from correct structure...')
       
@@ -110,6 +120,13 @@ export class UsersOnlyAdminService {
   }
 
   async getUsers(): Promise<AdminUser[]> {
+    const currentUser = this.getCurrentUser()
+    
+    if (!currentUser || currentUser.email !== 'tikjan1983@gmail.com') {
+      console.warn('Access denied: User is not admin', currentUser)
+      throw new Error('Access denied: Only admin can access users')
+    }
+
     try {
       console.log('👥 Loading users from correct structure...')
       
@@ -179,6 +196,13 @@ export class UsersOnlyAdminService {
   }
 
   async getCars(): Promise<AdminCar[]> {
+    const currentUser = this.getCurrentUser()
+    
+    if (!currentUser || currentUser.email !== 'tikjan1983@gmail.com') {
+      console.warn('Access denied: User is not admin', currentUser)
+      throw new Error('Access denied: Only admin can access cars')
+    }
+
     try {
       console.log('🚗 Loading cars from correct structure...')
       
@@ -240,6 +264,13 @@ export class UsersOnlyAdminService {
   }
 
   async getPopularBrands(): Promise<PopularBrand[]> {
+    const currentUser = this.getCurrentUser()
+    
+    if (!currentUser || currentUser.email !== 'tikjan1983@gmail.com') {
+      console.warn('Access denied: User is not admin', currentUser)
+      throw new Error('Access denied: Only admin can access analytics')
+    }
+
     try {
       console.log('🏆 Loading popular brands...')
       
@@ -265,6 +296,13 @@ export class UsersOnlyAdminService {
   }
 
   async getCategoryExpenses(): Promise<CategoryExpense[]> {
+    const currentUser = this.getCurrentUser()
+    
+    if (!currentUser || currentUser.email !== 'tikjan1983@gmail.com') {
+      console.warn('Access denied: User is not admin', currentUser)
+      throw new Error('Access denied: Only admin can access analytics')
+    }
+
     try {
       console.log('💰 Loading category expenses...')
       
