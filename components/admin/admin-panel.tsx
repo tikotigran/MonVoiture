@@ -382,7 +382,7 @@ export function AdminPanel() {
         if (errorMessage.includes('Missing or insufficient permissions')) {
           setError('Недостаточно прав доступа. Проверьте правила Firestore.')
         } else if (errorMessage.includes('network') || errorMessage.includes('offline')) {
-          setError('Ошибка сети. Проверьте подключение к интернету.')
+          setError('Ошибка ��ети. Проверьте подключение к интернету.')
         } else {
           setError(`Ошибка загрузки данных. Используйте демо-режим для тестирования.`)
         }
@@ -448,6 +448,22 @@ export function AdminPanel() {
               className="w-full"
             >
               {useMockMode ? "🔴 Выключить демо-режим" : "🟢 Включить демо-режим"}
+            </Button>
+            <Button 
+              onClick={async () => {
+                try {
+                  const res = await fetch('/api/debug/firestore-structure')
+                  const data = await res.json()
+                  console.log('Firebase collections:', data)
+                  alert('Проверьте консоль браузера (F12) -> Console для информации о структуре Firebase')
+                } catch (e) {
+                  alert('Ошибка: ' + (e instanceof Error ? e.message : String(e)))
+                }
+              }}
+              variant="outline"
+              className="w-full"
+            >
+              🔍 Диагностика Firebase
             </Button>
             <Button onClick={() => window.location.reload()}>
               Попробовать снова
@@ -1047,7 +1063,7 @@ export function AdminPanel() {
                   <div className="p-4 border rounded-lg">
                     <div className="font-medium">Неактивные пользователи</div>
                     <div className="text-sm text-muted-foreground mb-2">
-                      Нет активности более 6 месяцев
+                      Нет ��ктивности более 6 месяцев
                     </div>
                     <div className="text-lg font-bold text-red-600">
                       {users.filter(u => !u.isActive).length} пользователей
