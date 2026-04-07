@@ -371,16 +371,24 @@ export function AdminPanel() {
         setPopularBrands(brandsData)
         setCategoryExpenses(categoriesData)
 
-        // Проверяем если все данные пустые (возможно проблема с правами)
-        if (statsData.totalUsers === 0 && usersData.length === 0 && carsData.length === 0 && !useMockMode) {
-          setError('Нет доступа к данным. Используйте демо-режим для тестирования.')
-        }
+        // Данные загружены успешно - даже если они пустые, это не ошибка
+        // Пустые данные означают что база данных новая или нет записей
+        console.log('[v0] Admin data loaded successfully:', {
+          users: usersData.length,
+          cars: carsData.length,
+          stats: statsData
+        })
       } catch (err) {
-        console.error('Error loading admin data:', err)
-        if (err instanceof Error && err.message.includes('Missing or insufficient permissions')) {
-          setError('Недостаточно прав доступа. Используйте демо-режим для тестирования.')
+        console.error('[v0] Error loading admin data:', err)
+        const errorMessage = err instanceof Error ? err.message : String(err)
+        console.error('[v0] Error details:', errorMessage)
+        
+        if (errorMessage.includes('Missing or insufficient permissions')) {
+          setError('Недостаточно прав доступа. Проверьте правила Firestore и убедитесь что вы вошли как tikjan1983@gmail.com')
+        } else if (errorMessage.includes('network') || errorMessage.includes('offline')) {
+          setError('Ошибка сети. Проверьте подключение к интернету.')
         } else {
-          setError('Не удалось загрузить данные. Попробуйте позже.')
+          setError(`Ошибка загрузки: ${errorMessage}`)
         }
       } finally {
         setLoading(false)
