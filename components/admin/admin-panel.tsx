@@ -75,12 +75,12 @@ export function AdminPanel() {
       const service = useMockMode ? mockAdminService : usersOnlyAdminService
       const result = await service.deleteUser(userId)
       
-      if (result.success) {
-        alert(result.message)
+      if (result && typeof result === 'object' && 'success' in result) {
+        alert((result as any).message)
         // Перезагружаем данные
         window.location.reload()
       } else {
-        alert(`Ошибка: ${result.message}`)
+        alert(`Ошибка: ${result}`)
       }
     } catch (error) {
       alert(`Ошибка удаления: ${(error as Error).message}`)
@@ -98,16 +98,16 @@ export function AdminPanel() {
     try {
       setActionLoading('complete-auth-delete')
       
-      // Используем Cloud Function для полного удаления
-      const result = await (window as any).deleteUserCompletelyFromAdmin(userEmail)
+      const service = useMockMode ? mockAdminService : usersOnlyAdminService
+      const result = await service.deleteUserCompletely(userEmail)
       
-      if (result.success) {
-        alert(`🎉 ${result.message}`)
+      if (result && typeof result === 'object' && 'success' in result) {
+        alert((result as any).message)
         
         // Перезагружаем данные
         window.location.reload()
       } else {
-        alert(`❌ ${result.message}`)
+        alert(`Ошибка: ${result}`)
       }
     } catch (error) {
       alert(`Ошибка полного удаления: ${(error as Error).message}`)
@@ -123,17 +123,18 @@ export function AdminPanel() {
 
     try {
       setActionLoading(userId)
+      
       const service = useMockMode ? mockAdminService : usersOnlyAdminService
       const result = await service.blockUser(userId)
       
-      if (result.success) {
-        alert(result.message)
+      if (result && typeof result === 'object' && 'success' in result) {
+        alert((result as any).message)
         // Обновляем данные пользователя
         setUsers(prev => prev.map(user => 
           user.id === userId ? { ...user, isActive: false } : user
         ))
       } else {
-        alert(`Ошибка: ${result.message}`)
+        alert(`Ошибка: ${result}`)
       }
     } catch (error) {
       alert(`Ошибка блокировки: ${(error as Error).message}`)
@@ -149,17 +150,18 @@ export function AdminPanel() {
 
     try {
       setActionLoading(userId)
+      
       const service = useMockMode ? mockAdminService : usersOnlyAdminService
       const result = await service.unblockUser(userId)
       
-      if (result.success) {
-        alert(result.message)
+      if (result && typeof result === 'object' && 'success' in result) {
+        alert((result as any).message)
         // Обновляем данные пользователя
         setUsers(prev => prev.map(user => 
           user.id === userId ? { ...user, isActive: true } : user
         ))
       } else {
-        alert(`Ошибка: ${result.message}`)
+        alert(`Ошибка: ${result}`)
       }
     } catch (error) {
       alert(`Ошибка разблокировки: ${(error as Error).message}`)
@@ -168,22 +170,31 @@ export function AdminPanel() {
     }
   }
 
-  const handleSendNotification = async (userId: string, userEmail: string) => {
-    const title = prompt('Заголовок уведомления:')
-    if (!title) return
+  const handleSendNotification = async () => {
+    const title = notificationTitle.trim()
+    const message = notificationMessage.trim()
+    
+    if (!title || !message) {
+      alert('Введите заголовок и текст уведомления')
+      return
+    }
 
-    const message = prompt('Текст уведомления:')
-    if (!message) return
+    if (!confirm(`Отправить уведомление всем пользователям?\n\n📧 Заголовок: ${title}\n💬 Сообщение: ${message}`)) {
+      return
+    }
 
     try {
-      setActionLoading(userId)
-      const service = useMockMode ? mockAdminService : usersOnlyAdminService
-      const result = await service.sendNotification(userId, title, message)
+      setActionLoading('notification')
       
-      if (result.success) {
-        alert(result.message)
+      const service = useMockMode ? mockAdminService : usersOnlyAdminService
+      const result = await service.sendNotification(title, message)
+      
+      if (result && typeof result === 'object' && 'success' in result) {
+        alert((result as any).message)
+        setNotificationTitle('')
+        setNotificationMessage('')
       } else {
-        alert(`Ошибка: ${result.message}`)
+        alert(`Ошибка: ${result}`)
       }
     } catch (error) {
       alert(`Ошибка отправки: ${(error as Error).message}`)
@@ -198,16 +209,17 @@ export function AdminPanel() {
 
     try {
       setActionLoading('cleanup')
+      
       const service = useMockMode ? mockAdminService : usersOnlyAdminService
       const result = await service.cleanupInactiveUsers(parseInt(days))
       
-      if (result.success) {
-        alert(result.message)
-        if (result.deletedCount && result.deletedCount > 0) {
+      if (result && typeof result === 'object' && 'success' in result) {
+        alert((result as any).message)
+        if ((result as any).deletedCount && (result as any).deletedCount > 0) {
           window.location.reload()
         }
       } else {
-        alert(`Ошибка: ${result.message}`)
+        alert(`Ошибка: ${result}`)
       }
     } catch (error) {
       alert(`Ошибка очистки: ${(error as Error).message}`)
@@ -356,14 +368,32 @@ export function AdminPanel() {
 
         const service = useMockMode ? mockAdminService : usersOnlyAdminService
 
-        // Загружаем все данные параллельно
-        const [statsData, usersData, carsData, brandsData, categoriesData] = await Promise.all([
-          service.getStats(),
-          service.getUsers(),
-          service.getCars(),
-          service.getPopularBrands(),
-          service.getCategoryExpenses()
-        ])
+        // Загружаем все данные с fallback на демо-режим
+        let statsData, usersData, carsData, brandsData, categoriesData
+        
+        try {
+          [statsData, usersData, carsData, brandsData, categoriesData] = await Promise.all([
+            service.getStats(),
+            service.getUsers(),
+            service.getCars(),
+            service.getPopularBrands(),
+            service.getCategoryExpenses()
+          ])
+          console.log('✅ Real admin service loaded successfully')
+        } catch (error) {
+          console.warn('⚠️ Real admin service failed, falling back to mock mode:', error)
+          [statsData, usersData, carsData, brandsData, categoriesData] = await Promise.all([
+            mockAdminService.getStats(),
+            mockAdminService.getUsers(),
+            mockAdminService.getCars(),
+            mockAdminService.getPopularBrands(),
+            mockAdminService.getCategoryExpenses()
+          ])
+          console.log('📊 Mock admin service loaded as fallback')
+          
+          // Автоматически включаем демо-режим
+          setUseMockMode(true)
+        }
 
         setStats(statsData)
         setUsers(usersData)
@@ -417,23 +447,63 @@ export function AdminPanel() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center max-w-md mx-auto p-6">
-          <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
-          <h2 className="text-lg font-semibold text-destructive mb-2">Ошибка доступа</h2>
-          <p className="text-muted-foreground mb-4">{error}</p>
-          
-          {error.includes('прав доступа') && (
-            <div className="bg-muted p-4 rounded-lg text-left mb-4">
-              <h3 className="font-medium mb-2">🔧 Что нужно сделать:</h3>
-              <ol className="text-sm space-y-1 list-decimal list-inside">
-                <li>Откройте Firebase Console</li>
-                <li>Перейдите в Firestore Database → Rules</li>
-                <li>Скопируйте правила из файла <code>firestore.rules</code></li>
-                <li>Нажмите "Publish"</li>
-                <li>Создайте пользователя tikjan1983@gmail.com в Authentication</li>
-              </ol>
-              <p className="text-xs mt-2">
-                📄 Подробности в файле <code>FIREBASE_SETUP.md</code>
-              </p>
+          {error && (
+            <div className="bg-destructive/10 border border-destructive/20 text-destructive p-4 rounded-lg mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="w-5 h-5" />
+                <h3 className="font-semibold">Ошибка доступа к данным</h3>
+              </div>
+              <p className="text-sm mb-4">{error}</p>
+              
+              {useMockMode ? (
+                <div className="bg-muted/50 p-3 rounded-lg text-left">
+                  <h4 className="font-medium mb-2 text-green-600">� Демо-режим включен</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Работаем с тестовыми данными. Для доступа к реальным данным:
+                  </p>
+                  <ol className="text-sm space-y-1 list-decimal list-inside mt-2">
+                    <li>Создайте пользователя <code>tikjan1983@gmail.com</code> в Firebase Authentication</li>
+                    <li>Проверьте права доступа в Firestore Rules</li>
+                    <li>Разверните Cloud Functions</li>
+                  </ol>
+                  <p className="text-xs mt-2">
+                    📄 Подробности в файлах <code>FIREBASE_SETUP.md</code> и <code>DEPLOY_CLOUD_FUNCTIONS.md</code>
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-muted/50 p-4 rounded-lg text-left">
+                  <h3 className="font-medium mb-2">🔧 Возможные решения:</h3>
+                  <ol className="text-sm space-y-1 list-decimal list-inside">
+                    <li>Проверьте консоль браузера для детальной ошибки</li>
+                    <li>Убедитесь что Cloud Functions развернуты</li>
+                    <li>Проверьте права доступа в Firebase Console</li>
+                  </ol>
+                  
+                  <div className="mt-4 space-y-2">
+                    <Button 
+                      onClick={() => setUseMockMode(true)}
+                      className="w-full"
+                      variant="default"
+                    >
+                      🟢 Включить демо-режим
+                    </Button>
+                    <Button 
+                      onClick={() => window.location.reload()}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      � Попробовать снова
+                    </Button>
+                    <Button 
+                      onClick={() => window.location.href = '/'}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      🏠 Перейти в приложение
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           
